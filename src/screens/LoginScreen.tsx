@@ -5,7 +5,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -15,7 +14,7 @@ import { useAuth } from '../auth/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = '804630899699-bneivotrnm10s65vddkv8cmgl9jk0apc.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com';
 
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -30,6 +29,7 @@ export function LoginScreen() {
   const redirectUri = AuthSession.makeRedirectUri({
     scheme: 'eurisko-hub',
     path: 'redirect',
+    projectNameForProxy: '@francois-maarbess/hr-mobile',
   });
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
@@ -37,13 +37,10 @@ export function LoginScreen() {
       clientId: GOOGLE_CLIENT_ID,
       scopes: ['openid', 'profile', 'email'],
       redirectUri,
+      useProxy: true,
     },
     discovery,
   );
-
-  React.useEffect(() => {
-    console.log('Redirect URI:', redirectUri);
-  }, []);
 
   React.useEffect(() => {
     if (response?.type === 'success') {
