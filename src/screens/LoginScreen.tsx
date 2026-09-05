@@ -24,9 +24,8 @@ const discovery = {
 };
 
 export function LoginScreen() {
-  const { loginWithGoogle, loginWithSso } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [testUser, setTestUser] = useState('francis.king');
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -57,18 +56,6 @@ export function LoginScreen() {
     }
   };
 
-  const handleTestLogin = async () => {
-    if (!testUser.trim()) return;
-    setLoading(true);
-    try {
-      await loginWithSso(testUser.trim());
-    } catch (e: any) {
-      Alert.alert('Test Login Failed', e?.message || 'Could not log in with test user');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
@@ -82,29 +69,6 @@ export function LoginScreen() {
         >
           <Text style={styles.googleBtnText}>G  Sign in with Google</Text>
         </TouchableOpacity>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>OR TEST / DEV MODE</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <Text style={styles.devLabel}>SSO Username or Email:</Text>
-        <TextInput
-          style={styles.devInput}
-          value={testUser}
-          onChangeText={setTestUser}
-          placeholder="e.g. francis.king or admin@fakecompany.com"
-          autoCapitalize="none"
-        />
-
-        <TouchableOpacity
-          style={[styles.devBtn, loading && styles.buttonDisabled]}
-          onPress={handleTestLogin}
-          disabled={loading}
-        >
-          <Text style={styles.devBtnText}>{loading ? 'Signing in...' : 'Sign In (Test Mode)'}</Text>
-        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -114,15 +78,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', padding: 24 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 28, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   title: { fontSize: 24, fontWeight: '800', color: '#0f172a', textAlign: 'center', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 24 },
+  subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 28 },
   googleBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 16, alignItems: 'center' },
   googleBtnText: { fontSize: 16, fontWeight: '600', color: '#333' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  divider: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
-  dividerText: { marginHorizontal: 10, fontSize: 11, fontWeight: '700', color: '#94a3b8' },
-  devLabel: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 6 },
-  devInput: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 10, padding: 12, fontSize: 14, marginBottom: 12, backgroundColor: '#f8fafc' },
-  devBtn: { backgroundColor: '#0f172a', borderRadius: 10, padding: 14, alignItems: 'center' },
-  devBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   buttonDisabled: { opacity: 0.6 },
 });

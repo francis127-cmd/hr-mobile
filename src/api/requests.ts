@@ -20,16 +20,6 @@ export const api = {
     authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub);
   },
 
-  async loginSso(ssoSubject: string): Promise<void> {
-    authStore.set({ ssoSubject: '', token: '' });
-    const res = await apiRequest<{ accessToken: string }>('/auth/token', {
-      method: 'POST',
-      body: JSON.stringify({ ssoSubject }),
-    });
-    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email || payload.sub, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub);
-  },
-
   catalog(): Promise<Department[]> {
     return apiRequest<Department[]>('/catalog');
   },
