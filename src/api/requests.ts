@@ -32,6 +32,10 @@ export const api = {
     return apiRequest<HrRequest[]>(`/requests?department=${departmentCode}`);
   },
 
+  listClaimed(): Promise<HrRequest[]> {
+    return apiRequest<HrRequest[]>('/requests?view=claimed');
+  },
+
   getRequest(id: string): Promise<HrRequest> {
     return apiRequest<HrRequest>(`/requests/${id}`);
   },

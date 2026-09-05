@@ -23,7 +23,7 @@ export function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'my' | 'dept'>('my');
+  const [activeTab, setActiveTab] = useState<'my' | 'dept' | 'claimed'>('my');
 
   const isStaff = memberships.length > 0 || user?.role === 'SYSTEM_ADMIN';
   const firstDept = memberships[0];
@@ -56,15 +56,31 @@ export function HomeScreen() {
     }
   }, []);
 
+  const loadClaimed = useCallback(async () => {
+    try {
+      setLoading(true);
+      const reqs = await api.listClaimed();
+      setRequests(reqs);
+      setError(null);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
   useFocusEffect(useCallback(() => {
     if (activeTab === 'dept' && firstDept) {
       loadDeptQueue(firstDept.department.code);
+    } else if (activeTab === 'claimed') {
+      loadClaimed();
     } else {
       load();
     }
-  }, [activeTab, load, loadDeptQueue, firstDept]));
+  }, [activeTab, load, loadDeptQueue, loadClaimed, firstDept]));
 
-  const switchTab = (tab: 'my' | 'dept') => {
+  const switchTab = (tab: 'my' | 'dept' | 'claimed') => {
     setActiveTab(tab);
     setRequests([]);
     setLoading(true);
@@ -112,6 +128,12 @@ export function HomeScreen() {
               <Text style={[styles.tabText, activeTab === 'dept' && styles.tabTextActive]}>{m.department.code} Queue</Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'claimed' && styles.tabActive]}
+            onPress={() => switchTab('claimed')}
+          >
+            <Text style={[styles.tabText, activeTab === 'claimed' && styles.tabTextActive]}>Claimed</Text>
+          </TouchableOpacity>
           {user?.role === 'SYSTEM_ADMIN' && (
             <TouchableOpacity
               style={[styles.tab, activeTab === 'dept' && styles.tabActive]}
@@ -126,7 +148,7 @@ export function HomeScreen() {
       {error ? (
         <View style={styles.center}>
           <EmptyState message={error} />
-          <TouchableOpacity onPress={() => activeTab === 'dept' && firstDept ? loadDeptQueue(firstDept.department.code) : load()}>
+          <TouchableOpacity onPress={() => activeTab === 'dept' && firstDept ? loadDeptQueue(firstDept.department.code) : activeTab === 'claimed' ? loadClaimed() : load()}>
             <Text style={styles.retry}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -138,15 +160,16 @@ export function HomeScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                if (activeTab === 'dept' && firstDept) loadDeptQueue(firstDept.department.code);
-                else load();
-              }}
+          onRefresh={() => {
+            setRefreshing(true);
+            if (activeTab === 'dept' && firstDept) loadDeptQueue(firstDept.department.code);
+            else if (activeTab === 'claimed') loadClaimed();
+            else load();
+          }}
             />
           }
           ListEmptyComponent={
-            <EmptyState message={activeTab === 'dept' ? 'No requests in department queue.' : 'No requests yet. Tap + to create one.'} />
+            <EmptyState message={activeTab === 'dept' ? 'No requests in department queue.' : activeTab === 'claimed' ? 'No claimed requests yet.' : 'No requests yet. Tap + to create one.'} />
           }
           renderItem={({ item }) => (
             <RequestCard request={item} onPress={(id) => navigation.navigate('RequestDetail', { id })} />

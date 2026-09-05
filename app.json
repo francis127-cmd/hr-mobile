@@ -21,6 +21,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "de134d2c-01ad-451b-a1f1-52d4b47ea51d"
+      }
+    },
+    "owner": "francois-maarbess"
   }
 }

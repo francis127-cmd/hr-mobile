@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const DEFAULT_API_BASE = 'https://internal-ops-hub-api.onrender.com';
+export const DEFAULT_API_BASE = 'https://euriskoproject.onrender.com';
 
 interface AuthState {
   ssoSubject: string;

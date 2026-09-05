@@ -56,10 +56,10 @@ export function LoginScreen() {
 
         <View style={styles.demoBox}>
           <Text style={styles.demoTitle}>Demo accounts:</Text>
-          <Text style={styles.demoText}>alex.chen — Employee</Text>
-          <Text style={styles.demoText}>sara.kumar — IT Agent</Text>
-          <Text style={styles.demoText}>mike.howard — HR Agent</Text>
-          <Text style={styles.demoText}>james.wilson — Facilities Agent</Text>
+          <Text style={styles.demoText}>alex.chen — Employee (Yorgo)</Text>
+          <Text style={styles.demoText}>sara.kumar — IT Agent (Francis)</Text>
+          <Text style={styles.demoText}>mike.howard — HR Agent (Mike)</Text>
+          <Text style={styles.demoText}>james.wilson — Facilities Agent (James)</Text>
         </View>
       </View>
     </KeyboardAvoidingView>
