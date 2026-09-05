@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,6 +16,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com';
 
+const EXPO_REDIRECT_URI = 'https://auth.expo.io/@francois-maarbess/hr-mobile';
+
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
   tokenEndpoint: 'https://oauth2.googleapis.com/token',
@@ -26,23 +28,16 @@ export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'eurisko-hub',
-    path: 'redirect',
-    projectNameForProxy: '@francois-maarbess/hr-mobile',
-  });
-
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_ID,
       scopes: ['openid', 'profile', 'email'],
-      redirectUri,
-      useProxy: true,
+      redirectUri: EXPO_REDIRECT_URI,
     },
     discovery,
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params;
       if (id_token) {
