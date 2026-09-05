@@ -80,8 +80,6 @@ export function AppNavigator() {
           <Stack.Screen name="CreateRequest" component={CreateRequestScreen} options={{ title: 'New Request' }} />
           <Stack.Screen name="RequestDetail" component={RequestDetailScreen} options={{ title: 'Request' }} />
           <Stack.Screen name="DepartmentQueue" component={DepartmentQueueScreen} options={{ title: 'Department Queue' }} />
-          <Stack.Screen name="InviteUser" component={InviteUserScreen} options={{ title: 'Invite User' }} />
-          <Stack.Screen name="ManageUsers" component={ManageUsersScreen} options={{ title: 'Manage Users' }} />
         </>
       )}
     </Stack.Navigator>

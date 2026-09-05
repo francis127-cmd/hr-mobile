@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { api } from '../api/requests';
-import { useAuth } from '../auth/AuthContext';
 
 export function InviteUserScreen({ navigation }: any) {
-  const { user } = useAuth();
   const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [platformRole, setPlatformRole] = useState('EMPLOYEE');
   const [departmentCode, setDepartmentCode] = useState('');
   const [departmentRole, setDepartmentRole] = useState('AGENT');
   const [departments, setDepartments] = useState<{ id: string; code: string; name: string }[]>([]);
@@ -17,23 +15,23 @@ export function InviteUserScreen({ navigation }: any) {
   }, []);
 
   const handleInvite = async () => {
-    if (!email || !displayName) {
-      Alert.alert('Error', 'Email and name are required');
+    if (!email) {
+      Alert.alert('Error', 'Email is required');
       return;
     }
     setLoading(true);
     try {
       await api.adminInviteUser({
         email: email.toLowerCase().trim(),
-        displayName: displayName.trim(),
+        platformRole,
         departmentCode: departmentCode || undefined,
         departmentRole: departmentCode ? departmentRole : undefined,
       });
-      Alert.alert('Success', `Invite sent to ${email}`, [
+      Alert.alert('Success', `Invite created for ${email}. They can sign in with Google.`, [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to invite user');
+      Alert.alert('Error', e.message || 'Failed to create invitation');
     } finally {
       setLoading(false);
     }
@@ -42,7 +40,7 @@ export function InviteUserScreen({ navigation }: any) {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Invite User</Text>
-      <Text style={styles.subtitle}>User will sign in via Google SSO</Text>
+      <Text style={styles.subtitle}>An invitation will be created. User signs in with Google to activate.</Text>
 
       <Text style={styles.label}>Email *</Text>
       <TextInput
@@ -54,13 +52,20 @@ export function InviteUserScreen({ navigation }: any) {
         autoCapitalize="none"
       />
 
-      <Text style={styles.label}>Display Name *</Text>
-      <TextInput
-        style={styles.input}
-        value={displayName}
-        onChangeText={setDisplayName}
-        placeholder="John Doe"
-      />
+      <Text style={styles.label}>Platform Role</Text>
+      <View style={styles.roleRow}>
+        {['EMPLOYEE', 'SYSTEM_ADMIN'].map((r) => (
+          <TouchableOpacity
+            key={r}
+            style={[styles.roleBtn, platformRole === r && styles.roleBtnActive]}
+            onPress={() => setPlatformRole(r)}
+          >
+            <Text style={[styles.roleText, platformRole === r && styles.roleTextActive]}>
+              {r === 'EMPLOYEE' ? 'Employee' : 'Admin'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <Text style={styles.label}>Department (optional)</Text>
       <View style={styles.picker}>
@@ -97,7 +102,7 @@ export function InviteUserScreen({ navigation }: any) {
       )}
 
       <TouchableOpacity style={styles.btn} onPress={handleInvite} disabled={loading}>
-        <Text style={styles.btnText}>{loading ? 'Sending...' : 'Send Invite'}</Text>
+        <Text style={styles.btnText}>{loading ? 'Creating...' : 'Create Invitation'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
