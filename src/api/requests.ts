@@ -10,16 +10,6 @@ import {
 import { authStore } from '../auth/authStore';
 
 export const api = {
-  async login(ssoSubject: string): Promise<void> {
-    authStore.set({ ssoSubject, token: '' });
-    const res = await apiRequest<{ accessToken: string }>('/auth/token', {
-      method: 'POST',
-      body: JSON.stringify({ ssoSubject }),
-    });
-    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, ssoSubject, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub);
-  },
-
   async loginGoogle(idToken: string): Promise<void> {
     authStore.set({ ssoSubject: '', token: '' });
     const res = await apiRequest<{ accessToken: string }>('/auth/google', {

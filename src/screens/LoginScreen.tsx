@@ -5,7 +5,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -24,8 +23,7 @@ const discovery = {
 };
 
 export function LoginScreen() {
-  const { loginWithSSO, loginWithGoogle } = useAuth();
-  const [ssoSubject, setSsoSubject] = useState('');
+  const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
@@ -57,21 +55,6 @@ export function LoginScreen() {
     }
   };
 
-  const handleSSOLogin = async () => {
-    if (!ssoSubject.trim()) {
-      Alert.alert('Required', 'Enter your SSO ID');
-      return;
-    }
-    setLoading(true);
-    try {
-      await loginWithSSO(ssoSubject.trim());
-    } catch (e: any) {
-      Alert.alert('Login failed', e?.message || 'Cannot reach the server');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
@@ -85,29 +68,6 @@ export function LoginScreen() {
         >
           <Text style={styles.googleBtnText}>G  Sign in with Google</Text>
         </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <Text style={styles.label}>SSO ID</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your SSO ID"
-          value={ssoSubject}
-          onChangeText={setSsoSubject}
-          autoCapitalize="none"
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSSOLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
-        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -120,12 +80,5 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 28 },
   googleBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 16, alignItems: 'center' },
   googleBtnText: { fontSize: 16, fontWeight: '600', color: '#333' },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
-  dividerText: { marginHorizontal: 12, color: '#94a3b8', fontSize: 13 },
-  label: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 6, marginTop: 4 },
-  input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 14, fontSize: 16, backgroundColor: '#f8fafc' },
-  button: { backgroundColor: '#2563eb', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 20 },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

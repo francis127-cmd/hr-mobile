@@ -16,7 +16,6 @@ interface AuthCtx {
   user: AuthUser | null;
   loading: boolean;
   memberships: DepartmentMember[];
-  loginWithSSO: (ssoSubject: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMemberships: () => Promise<void>;
@@ -26,7 +25,6 @@ const AuthContext = createContext<AuthCtx>({
   user: null,
   loading: true,
   memberships: [],
-  loginWithSSO: async () => {},
   loginWithGoogle: async () => {},
   logout: async () => {},
   refreshMemberships: async () => {},
@@ -51,23 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.myMemberships().then((m) => setMemberships(m as any)).catch(() => {});
     }
     setLoading(false);
-  }, []);
-
-  const loginWithSSO = useCallback(async (ssoSubject: string) => {
-    await api.login(ssoSubject);
-    const s = authStore.get();
-    setUser({
-      ssoSubject: s.ssoSubject,
-      userId: s.userId,
-      displayName: s.displayName,
-      email: s.email,
-      role: s.role,
-      apiBase: s.apiBase,
-    });
-    try {
-      const m = await api.myMemberships();
-      setMemberships(m as any);
-    } catch {}
   }, []);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
@@ -101,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, memberships, loginWithSSO, loginWithGoogle, logout, refreshMemberships }}>
+    <AuthContext.Provider value={{ user, loading, memberships, loginWithGoogle, logout, refreshMemberships }}>
       {children}
     </AuthContext.Provider>
   );
