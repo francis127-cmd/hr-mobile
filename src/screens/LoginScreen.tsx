@@ -40,7 +40,7 @@ export function LoginScreen() {
         <Text style={styles.label}>SSO ID</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. alex.chen, sara.kumar"
+          placeholder="Enter your SSO ID"
           value={ssoSubject}
           onChangeText={setSsoSubject}
           autoCapitalize="none"
