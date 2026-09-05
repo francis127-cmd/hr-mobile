@@ -6,6 +6,8 @@ export type RootStackParamList = {
   CreateRequest: { departmentCode?: string; requestTypeCode?: string };
   RequestDetail: { id: string };
   DepartmentQueue: { departmentCode: string; departmentName: string };
+  InviteUser: undefined;
+  ManageUsers: undefined;
 };
 
 export type RootNavigation = NativeStackScreenProps<RootStackParamList, 'Main'>['navigation'];

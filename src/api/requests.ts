@@ -97,4 +97,31 @@ export const api = {
   myMemberships(): Promise<{ departmentId: string; departmentRole: string; department: Department }[]> {
     return apiRequest('/departments/me/memberships');
   },
+
+  // Admin endpoints
+  adminListUsers(): Promise<any[]> {
+    return apiRequest<any[]>('/admin/users');
+  },
+
+  adminListDepartments(): Promise<{ id: string; code: string; name: string }[]> {
+    return apiRequest<{ id: string; code: string; name: string }[]>('/admin/departments');
+  },
+
+  adminInviteUser(dto: { email: string; displayName: string; departmentCode?: string; departmentRole?: string }): Promise<any> {
+    return apiRequest<any>('/admin/invite', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  },
+
+  adminUpdateUser(userId: string, dto: { departmentCode?: string; departmentRole?: string; platformRole?: string }): Promise<any> {
+    return apiRequest<any>(`/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  },
+
+  adminDeactivateUser(userId: string): Promise<any> {
+    return apiRequest<any>(`/admin/users/${userId}`, { method: 'DELETE' });
+  },
 };
