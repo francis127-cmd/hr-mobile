@@ -53,14 +53,6 @@ export function LoginScreen() {
         >
           <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
         </TouchableOpacity>
-
-        <View style={styles.demoBox}>
-          <Text style={styles.demoTitle}>Demo accounts:</Text>
-          <Text style={styles.demoText}>alex.chen — Employee (Yorgo Cnam)</Text>
-          <Text style={styles.demoText}>sara.kumar — IT Agent (Francis the King)</Text>
-          <Text style={styles.demoText}>mike.howard — HR Agent (Mike Howard)</Text>
-          <Text style={styles.demoText}>james.wilson — Facilities Agent (James Wilson)</Text>
-        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -76,7 +68,4 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#2563eb', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 24 },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  demoBox: { marginTop: 24, padding: 14, backgroundColor: '#f1f5f9', borderRadius: 8 },
-  demoTitle: { fontWeight: '700', color: '#334155', marginBottom: 4 },
-  demoText: { color: '#64748b', fontSize: 13, lineHeight: 20 },
 });
