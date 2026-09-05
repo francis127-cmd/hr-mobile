@@ -20,6 +20,16 @@ export const api = {
     authStore.setToken(res.accessToken, ssoSubject, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub);
   },
 
+  async loginGoogle(idToken: string): Promise<void> {
+    authStore.set({ ssoSubject: '', token: '' });
+    const res = await apiRequest<{ accessToken: string }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub);
+  },
+
   catalog(): Promise<Department[]> {
     return apiRequest<Department[]>('/catalog');
   },
