@@ -27,14 +27,23 @@ export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: 'eurisko-hub',
+    path: 'redirect',
+  });
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_ID,
       scopes: ['openid', 'profile', 'email'],
-      redirectUri: AuthSession.makeRedirectUri({ scheme: 'eurisko-hub' }),
+      redirectUri,
     },
     discovery,
   );
+
+  React.useEffect(() => {
+    console.log('Redirect URI:', redirectUri);
+  }, []);
 
   React.useEffect(() => {
     if (response?.type === 'success') {
