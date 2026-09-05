@@ -10,32 +10,19 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '../auth/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
-
-const GOOGLE_CLIENT_ID = '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com';
-
-const EXPO_REDIRECT_URI = 'https://auth.expo.io/@francois-maarbess/hr-mobile';
-
-const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-};
 
 export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: GOOGLE_CLIENT_ID,
-      scopes: ['openid', 'profile', 'email'],
-      redirectUri: EXPO_REDIRECT_URI,
-    },
-    discovery,
-  );
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
+    expoClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
+  });
 
   useEffect(() => {
     if (response?.type === 'success') {
