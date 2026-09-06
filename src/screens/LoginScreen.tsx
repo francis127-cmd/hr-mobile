@@ -38,6 +38,7 @@ export function LoginScreen() {
     setLoading(true);
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();
 
       if (!tokens.idToken) {
