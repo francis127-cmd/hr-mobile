@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -9,21 +9,21 @@ import {
   View,
   Linking,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://euriskoproject.onrender.com';
 const GOOGLE_WEB_CLIENT_ID = '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com';
 const BACKEND_CALLBACK = `${API_BASE}/auth/google/callback`;
-const DEEP_LINK_SCHEME = 'eurisko-hub://auth';
 
 export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const processedRef = useRef(false);
 
   useEffect(() => {
     const sub = Linking.addEventListener('url', ({ url }) => {
-      if (url.startsWith(DEEP_LINK_SCHEME)) {
+      if (url.startsWith('eurisko-hub://auth') && !processedRef.current) {
+        processedRef.current = true;
         try {
           const parsed = new URL(url);
           const token = parsed.searchParams.get('token');
@@ -44,6 +44,7 @@ export function LoginScreen() {
       Alert.alert('Login failed', e?.message || 'Google authentication failed');
     } finally {
       setLoading(false);
+      processedRef.current = false;
     }
   };
 
@@ -60,20 +61,9 @@ export function LoginScreen() {
       });
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, DEEP_LINK_SCHEME);
-
-      if (result.type === 'success' && result.url) {
-        const parsed = new URL(result.url);
-        const token = parsed.searchParams.get('token');
-        if (token) {
-          await handleLogin(token);
-        } else {
-          Alert.alert('Login failed', 'No token received from authentication');
-        }
-      }
+      await Linking.openURL(authUrl);
     } catch (e: any) {
-      Alert.alert('Login failed', e?.message || 'Google authentication failed');
-    } finally {
+      Alert.alert('Login failed', e?.message || 'Could not open Google sign-in');
       setLoading(false);
     }
   };
