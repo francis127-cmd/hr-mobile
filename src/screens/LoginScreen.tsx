@@ -5,7 +5,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
@@ -41,6 +40,7 @@ const DEMO_ACCOUNTS = [
 export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [useNative, setUseNative] = useState(false);
 
@@ -55,19 +55,30 @@ export function LoginScreen() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
+      setStatus('Checking Play Services...');
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      setStatus('Opening Google sign-in...');
       await GoogleSignin.signIn();
+
+      setStatus('Getting tokens...');
       const tokens = await GoogleSignin.getTokens();
       if (!tokens.idToken) throw new Error('No ID token received');
+
+      setStatus('Verifying with server...');
       await loginWithGoogle(tokens.idToken);
+
+      setStatus('Done!');
     } catch (e: any) {
-      if (e.code === statusCodes.SIGN_IN_CANCELLED) {
+      if (e.code === statusCodes?.SIGN_IN_CANCELLED) {
         setLoading(false);
+        setStatus('');
         return;
       }
-      Alert.alert('Login failed', e?.message || 'Google authentication failed');
+      Alert.alert('Login failed', `${e.code || 'unknown'}: ${e.message || 'Google authentication failed'}`);
     } finally {
       setLoading(false);
+      setTimeout(() => setStatus(''), 2000);
     }
   };
 
@@ -75,6 +86,7 @@ export function LoginScreen() {
     setLoading(true);
     setSelected(ssoSubject);
     try {
+      setStatus('Connecting to server...');
       const res = await fetch(`${API_BASE}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,13 +96,16 @@ export function LoginScreen() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || 'Login failed');
       }
+      setStatus('Signing in...');
       const { accessToken } = await res.json();
       await loginWithGoogle(accessToken);
+      setStatus('Done!');
     } catch (e: any) {
       Alert.alert('Login failed', e?.message || 'Authentication failed');
     } finally {
       setLoading(false);
       setSelected(null);
+      setTimeout(() => setStatus(''), 2000);
     }
   };
 
@@ -107,6 +122,7 @@ export function LoginScreen() {
           >
             {loading ? <ActivityIndicator color="#333" /> : <Text style={styles.googleBtnText}>G  Sign in with Google</Text>}
           </TouchableOpacity>
+          {status ? <Text style={styles.status}>{status}</Text> : null}
         </View>
       </KeyboardAvoidingView>
     );
@@ -128,6 +144,7 @@ export function LoginScreen() {
             <Text style={styles.accountId}>{account.sso}</Text>
           </TouchableOpacity>
         ))}
+        {status ? <Text style={styles.status}>{status}</Text> : null}
         <Text style={styles.hint}>Demo mode — run EAS build for Google SSO</Text>
       </View>
     </KeyboardAvoidingView>
@@ -148,4 +165,5 @@ const styles = StyleSheet.create({
   accountId: { fontSize: 12, color: '#64748b', marginTop: 2 },
   buttonDisabled: { opacity: 0.6 },
   hint: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 12 },
+  status: { fontSize: 12, color: '#6366f1', textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
 });
