@@ -10,6 +10,7 @@ interface AuthState {
   displayName: string;
   email: string;
   userId: string;
+  companyId: string;
 }
 
 let state: AuthState = {
@@ -20,6 +21,7 @@ let state: AuthState = {
   displayName: '',
   email: '',
   userId: '',
+  companyId: '',
 };
 
 const STORAGE_KEY = 'hr_auth';
@@ -46,13 +48,13 @@ export const authStore = {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   },
 
-  async setToken(token: string, ssoSubject: string, role: string, apiBase: string, displayName?: string, email?: string, userId?: string) {
-    state = { ...state, token, ssoSubject, role, apiBase, displayName: displayName || state.displayName, email: email || state.email, userId: userId || state.userId };
+  async setToken(token: string, ssoSubject: string, role: string, apiBase: string, displayName?: string, email?: string, userId?: string, companyId?: string) {
+    state = { ...state, token, ssoSubject, role, apiBase, displayName: displayName || state.displayName, email: email || state.email, userId: userId || state.userId, companyId: companyId || state.companyId };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   },
 
   async logout() {
-    state = { ssoSubject: '', token: '', apiBase: DEFAULT_API_BASE, role: '', displayName: '', email: '', userId: '' };
+    state = { ssoSubject: '', token: '', apiBase: DEFAULT_API_BASE, role: '', displayName: '', email: '', userId: '', companyId: '' };
     await AsyncStorage.removeItem(STORAGE_KEY);
   },
 };

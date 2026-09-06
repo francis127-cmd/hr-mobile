@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 export type RootStackParamList = {
   Login: undefined;
+  CompanySetup: undefined;
   Main: undefined;
   CreateRequest: { departmentCode?: string; requestTypeCode?: string };
   RequestDetail: { id: string };

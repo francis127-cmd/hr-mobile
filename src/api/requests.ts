@@ -10,14 +10,15 @@ import {
 import { authStore } from '../auth/authStore';
 
 export const api = {
-  async loginGoogle(idToken: string): Promise<void> {
+  async loginGoogle(idToken: string): Promise<{ newCompany: boolean }> {
     authStore.set({ ssoSubject: '', token: '' });
-    const res = await apiRequest<{ accessToken: string }>('/auth/google', {
+    const res = await apiRequest<{ accessToken: string; newCompany: boolean }>('/auth/google', {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub);
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId);
+    return { newCompany: res.newCompany || false };
   },
 
   catalog(): Promise<Department[]> {
@@ -118,5 +119,12 @@ export const api = {
 
   adminDeactivateUser(userId: string): Promise<any> {
     return apiRequest<any>(`/admin/users/${userId}`, { method: 'DELETE' });
+  },
+
+  updateCompany(companyId: string, name: string): Promise<{ id: string; name: string; slug: string }> {
+    return apiRequest<{ id: string; name: string; slug: string }>(`/companies/${companyId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    });
   },
 };

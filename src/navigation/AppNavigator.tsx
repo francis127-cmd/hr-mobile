@@ -11,6 +11,7 @@ import { DepartmentQueueScreen } from '../screens/DepartmentQueueScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { InviteUserScreen } from '../screens/InviteUserScreen';
 import { ManageUsersScreen } from '../screens/ManageUsersScreen';
+import { CompanySetupScreen } from '../screens/CompanySetupScreen';
 import { useAuth, canManageAll } from '../auth/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
@@ -60,7 +61,7 @@ function AdminTabs() {
 }
 
 export function AppNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, newCompany } = useAuth();
 
   if (loading) {
     return (
@@ -74,6 +75,8 @@ export function AppNavigator() {
     <Stack.Navigator>
       {!user ? (
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+      ) : newCompany ? (
+        <Stack.Screen name="CompanySetup" component={CompanySetupScreen} options={{ headerShown: false }} />
       ) : (
         <>
           <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />

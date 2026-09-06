@@ -10,13 +10,16 @@ interface AuthUser {
   email: string;
   role: string;
   apiBase: string;
+  companyId: string;
 }
 
 interface AuthCtx {
   user: AuthUser | null;
   loading: boolean;
   memberships: DepartmentMember[];
+  newCompany: boolean;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  completeSetup: (companyName: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMemberships: () => Promise<void>;
 }
@@ -25,7 +28,9 @@ const AuthContext = createContext<AuthCtx>({
   user: null,
   loading: true,
   memberships: [],
+  newCompany: false,
   loginWithGoogle: async () => {},
+  completeSetup: async () => {},
   logout: async () => {},
   refreshMemberships: async () => {},
 });
@@ -34,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState<DepartmentMember[]>([]);
+  const [newCompany, setNewCompany] = useState(false);
 
   useEffect(() => {
     const s = authStore.get();
@@ -45,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: s.email,
         role: s.role,
         apiBase: s.apiBase,
+        companyId: s.companyId || '',
       });
       api.myMemberships().then((m) => setMemberships(m as any)).catch(() => {});
     }
@@ -52,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
-    await api.loginGoogle(idToken);
+    const result = await api.loginGoogle(idToken);
     const s = authStore.get();
     setUser({
       ssoSubject: s.ssoSubject,
@@ -61,12 +68,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: s.email,
       role: s.role,
       apiBase: s.apiBase,
+      companyId: s.companyId || '',
     });
+    setNewCompany(result.newCompany);
     try {
       const m = await api.myMemberships();
       setMemberships(m as any);
     } catch {}
   }, []);
+
+  const completeSetup = useCallback(async (companyName: string) => {
+    if (user?.companyId) {
+      await api.updateCompany(user.companyId, companyName);
+    }
+    setNewCompany(false);
+  }, [user]);
 
   const logout = useCallback(async () => {
     try {
@@ -76,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authStore.logout();
     setUser(null);
     setMemberships([]);
+    setNewCompany(false);
   }, []);
 
   const refreshMemberships = useCallback(async () => {
@@ -86,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, memberships, loginWithGoogle, logout, refreshMemberships }}>
+    <AuthContext.Provider value={{ user, loading, memberships, newCompany, loginWithGoogle, completeSetup, logout, refreshMemberships }}>
       {children}
     </AuthContext.Provider>
   );
