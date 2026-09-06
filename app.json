@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "hr-mobile",
+    "name": "Internal Operations Hub",
     "slug": "hr-mobile",
     "scheme": "eurisko-hub",
     "version": "1.0.0",
@@ -8,7 +8,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eurisko.hub"
     },
     "android": {
       "package": "com.eurisko.hub",
@@ -19,7 +20,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,7 +33,14 @@
     },
     "owner": "francois-maarbess",
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "webClientId": "804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com",
+          "profileImageSize": 120
+        }
+      ]
     ]
   }
 }
