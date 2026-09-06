@@ -10,6 +10,47 @@ import {
 import { authStore } from '../auth/authStore';
 
 export const api = {
+  async discover(email: string): Promise<{ authMode: string; companySlug?: string; companyName?: string; companyId?: string; provider?: string; googleClientId?: string }> {
+    return apiRequest('/auth/discover', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async loginPassword(email: string, password: string): Promise<{ accessToken: string }> {
+    const res = await apiRequest<{ accessToken: string }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false);
+    return res;
+  },
+
+  async registerPassword(dto: { email: string; password: string; displayName?: string; companyName?: string; companySlug?: string }): Promise<{ accessToken: string; newCompany: boolean }> {
+    const res = await apiRequest<{ accessToken: string; newCompany: boolean }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false);
+    return res;
+  },
+
+  async acceptInvite(token: string, password: string): Promise<{ accessToken: string }> {
+    const res = await apiRequest<{ accessToken: string }>('/auth/accept-invite', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false);
+    return res;
+  },
+
+  async validateInviteToken(token: string): Promise<{ email: string; role: string; department?: string; companyName: string; companySlug: string; expiresAt: string }> {
+    return apiRequest(`/auth/invitations/${token}`);
+  },
+
   async loginGoogle(idToken: string): Promise<{ newCompany: boolean }> {
     authStore.set({ ssoSubject: '', token: '' });
     const res = await apiRequest<{ accessToken: string; newCompany: boolean }>('/auth/google', {
@@ -128,11 +169,11 @@ export const api = {
     });
   },
 
-  getCompanySettings(): Promise<{ id: string; name: string; slug: string; domain: string; ssoProvider: string; googleClientId: string }> {
+  getCompanySettings(): Promise<{ id: string; name: string; slug: string; domain: string; authMode: string; ssoProvider: string; googleClientId: string }> {
     return apiRequest(`/companies/${authStore.get().companyId}/settings`);
   },
 
-  updateCompanySso(dto: { domain?: string; googleClientId?: string }): Promise<{ id: string; name: string; slug: string; domain: string; ssoProvider: string; googleClientId: string }> {
+  updateCompanySso(dto: { domain?: string; googleClientId?: string; authMode?: string }): Promise<{ id: string; name: string; slug: string; domain: string; authMode: string; ssoProvider: string; googleClientId: string }> {
     return apiRequest(`/companies/${authStore.get().companyId}/sso`, {
       method: 'PATCH',
       body: JSON.stringify(dto),

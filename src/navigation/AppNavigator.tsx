@@ -3,6 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from './types';
 import { LoginScreen } from '../screens/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
+import { AcceptInviteScreen } from '../screens/AcceptInviteScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { DepartmentScreen } from '../screens/DepartmentScreen';
 import { CreateRequestScreen } from '../screens/CreateRequestScreen';
@@ -79,6 +81,8 @@ export function AppNavigator() {
       {!user ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create Account' }} />
+          <Stack.Screen name="AcceptInvite" component={AcceptInviteScreen} options={{ title: 'Accept Invitation' }} />
           <Stack.Screen name="RegisterCompany" component={RegisterCompanyScreen} options={{ title: 'Register Company' }} />
         </>
       ) : newCompany ? (

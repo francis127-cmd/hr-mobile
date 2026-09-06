@@ -1,130 +1,115 @@
-import React, { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://euriskoproject.onrender.com';
-
-let GoogleSignin: any = null;
-let statusCodes: any = null;
-let nativeAvailable = false;
-
-try {
-  const mod = require('@react-native-google-signin/google-signin');
-  GoogleSignin = mod.GoogleSignin;
-  statusCodes = mod.statusCodes;
-  nativeAvailable = true;
-} catch {
-  nativeAvailable = false;
-}
-
-interface DiscoverResult {
-  provider: string;
-  googleClientId?: string;
-  companySlug: string;
-  companyName: string;
-}
+GoogleSignin.configure({
+  webClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
+  scopes: ['profile', 'email'],
+});
 
 export function LoginScreen({ navigation }: any) {
   const { loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
-  const [step, setStep] = useState<'email' | 'sso'>('email');
-  const [companyInfo, setCompanyInfo] = useState<DiscoverResult | null>(null);
+  const [step, setStep] = useState<'email' | 'sso' | 'password'>('email');
+  const [discoverResult, setDiscoverResult] = useState<any>(null);
 
   const handleDiscover = async () => {
-    const trimmedEmail = email.toLowerCase().trim();
-    if (!trimmedEmail || !trimmedEmail.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
+    if (!email.trim()) return;
     setLoading(true);
+    setStatus('');
     try {
-      setStatus('Looking up your company...');
-      const res = await fetch(`${API_BASE}/auth/discover`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmedEmail }),
-      });
+      const result = await api.discover(email.trim().toLowerCase());
+      setDiscoverResult(result);
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Company not found');
+      if (result.authMode === 'SSO') {
+        // Configure GoogleSignin with company's client ID
+        if (result.googleClientId) {
+          GoogleSignin.configure({
+            webClientId: result.googleClientId,
+            scopes: ['profile', 'email'],
+          });
+        }
+        setStep('sso');
+        setStatus(`Signing in to ${result.companyName} via Google...`);
+        handleGoogleSignIn();
+      } else if (result.authMode === 'PASSWORD') {
+        setStep('password');
+        setStatus('');
+      } else {
+        // REGISTER mode — no company found
+        navigation.navigate('Register', { email: email.trim().toLowerCase() });
       }
-
-      const data: DiscoverResult = await res.json();
-      setCompanyInfo(data);
-      setStep('sso');
-      setStatus('');
     } catch (e: any) {
-      Alert.alert('Company not found', e.message || 'No company configured for this email domain. Ask your admin to register.');
+      // If domain not found, offer registration
+      if (e.status === 404) {
+        navigation.navigate('Register', { email: email.trim().toLowerCase() });
+      } else {
+        setStatus(e.message || 'Something went wrong');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    if (!nativeAvailable || !GoogleSignin) {
-      Alert.alert('Error', 'Google Sign-In requires the native build');
-      return;
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      if (tokens.idToken) {
+        await loginWithGoogle(tokens.idToken);
+        // AuthContext will detect the token and navigate
+      }
+    } catch (e: any) {
+      setStatus(e.message || 'Google sign-in failed');
     }
+  };
 
+  const handlePasswordLogin = async (password: string) => {
+    if (!password.trim()) return;
     setLoading(true);
     try {
-      setStatus('Configuring sign-in...');
-      if (companyInfo?.googleClientId) {
-        GoogleSignin.configure({
-          webClientId: companyInfo.googleClientId,
-          offlineAccess: false,
-          scopes: ['openid', 'profile', 'email'],
-        });
-      }
-
-      setStatus('Opening Google sign-in...');
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      await GoogleSignin.signIn();
-      const tokens = await GoogleSignin.getTokens();
-      if (!tokens.idToken) throw new Error('No ID token received');
-
-      setStatus('Verifying with server...');
-      await loginWithGoogle(tokens.idToken);
-      setStatus('Done!');
+      await api.loginPassword(email.trim().toLowerCase(), password);
+      // AuthContext will detect the token and navigate to Main
     } catch (e: any) {
-      if (e.code === statusCodes?.SIGN_IN_CANCELLED) {
-        setLoading(false);
-        setStatus('');
-        return;
-      }
-      Alert.alert('Login failed', `${e.code || 'unknown'}: ${e.message || 'Google authentication failed'}`);
+      setStatus(e.message || 'Login failed');
     } finally {
       setLoading(false);
-      setTimeout(() => setStatus(''), 2000);
     }
   };
 
   const handleBack = () => {
     setStep('email');
-    setCompanyInfo(null);
+    setDiscoverResult(null);
     setStatus('');
   };
 
-  if (step === 'sso' && companyInfo) {
+  // PASSWORD mode — show password input
+  if (step === 'password') {
+    return (
+      <PasswordStep
+        email={email}
+        companyName={discoverResult?.companyName}
+        onLogin={handlePasswordLogin}
+        onBack={handleBack}
+        loading={loading}
+        status={status}
+      />
+    );
+  }
+
+  // SSO mode — show Google sign-in
+  if (step === 'sso') {
     return (
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.card}>
-          <Text style={styles.title}>{companyInfo.companyName}</Text>
-          <Text style={styles.subtitle}>Sign in with your company Google account</Text>
+          <Text style={styles.title}>Internal Operations Hub</Text>
+          <Text style={styles.subtitle}>Signing in to {discoverResult?.companyName}</Text>
+
           <Text style={styles.email}>{email}</Text>
 
           <TouchableOpacity
@@ -145,6 +130,7 @@ export function LoginScreen({ navigation }: any) {
     );
   }
 
+  // EMAIL step — default
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
@@ -170,8 +156,54 @@ export function LoginScreen({ navigation }: any) {
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Continue</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.registerBtn} onPress={() => navigation.navigate('RegisterCompany')}>
+        <TouchableOpacity style={styles.registerBtn} onPress={() => navigation.navigate('Register', { email })}>
           <Text style={styles.registerBtnText}>Register your company</Text>
+        </TouchableOpacity>
+
+        {status ? <Text style={styles.status}>{status}</Text> : null}
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+function PasswordStep({ email, companyName, onLogin, onBack, loading, status }: {
+  email: string;
+  companyName?: string;
+  onLogin: (password: string) => void;
+  onBack: () => void;
+  loading: boolean;
+  status: string;
+}) {
+  const [password, setPassword] = useState('');
+
+  return (
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Internal Operations Hub</Text>
+        <Text style={styles.subtitle}>Sign in to {companyName || 'your company'}</Text>
+
+        <Text style={styles.email}>{email}</Text>
+
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Enter your password"
+          secureTextEntry
+          autoFocus
+        />
+
+        <TouchableOpacity
+          style={[styles.continueBtn, loading && styles.buttonDisabled]}
+          onPress={() => onLogin(password)}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Sign In</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+          <Text style={styles.backBtnText}>Use a different email</Text>
         </TouchableOpacity>
 
         {status ? <Text style={styles.status}>{status}</Text> : null}
