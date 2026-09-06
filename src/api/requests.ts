@@ -17,7 +17,7 @@ export const api = {
       body: JSON.stringify({ idToken }),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId);
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false);
     return { newCompany: res.newCompany || false };
   },
 

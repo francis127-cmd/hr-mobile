@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         apiBase: s.apiBase,
         companyId: s.companyId || '',
       });
+      setNewCompany(s.newCompany);
       api.myMemberships().then((m) => setMemberships(m as any)).catch(() => {});
     }
     setLoading(false);
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       companyId: s.companyId || '',
     });
     setNewCompany(result.newCompany);
+    await authStore.set({ newCompany: result.newCompany });
     try {
       const m = await api.myMemberships();
       setMemberships(m as any);
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await api.updateCompany(user.companyId, companyName);
     }
     setNewCompany(false);
+    await authStore.set({ newCompany: false });
   }, [user]);
 
   const logout = useCallback(async () => {
