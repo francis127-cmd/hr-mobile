@@ -12,6 +12,8 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { InviteUserScreen } from '../screens/InviteUserScreen';
 import { ManageUsersScreen } from '../screens/ManageUsersScreen';
 import { CompanySetupScreen } from '../screens/CompanySetupScreen';
+import { SSOSettingsScreen } from '../screens/SSOSettingsScreen';
+import { RegisterCompanyScreen } from '../screens/RegisterCompanyScreen';
 import { useAuth, canManageAll } from '../auth/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
@@ -56,6 +58,7 @@ function AdminTabs() {
     <Stack.Navigator>
       <Stack.Screen name="ManageUsers" component={ManageUsersScreen} options={{ title: 'Manage Users' }} />
       <Stack.Screen name="InviteUser" component={InviteUserScreen} options={{ title: 'Invite User' }} />
+      <Stack.Screen name="SSOSettings" component={SSOSettingsScreen} options={{ title: 'SSO Settings' }} />
     </Stack.Navigator>
   );
 }
@@ -74,7 +77,10 @@ export function AppNavigator() {
   return (
     <Stack.Navigator>
       {!user ? (
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="RegisterCompany" component={RegisterCompanyScreen} options={{ title: 'Register Company' }} />
+        </>
       ) : newCompany ? (
         <Stack.Screen name="CompanySetup" component={CompanySetupScreen} options={{ headerShown: false }} />
       ) : (

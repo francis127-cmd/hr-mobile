@@ -27,13 +27,20 @@ try {
   nativeAvailable = false;
 }
 
-export function LoginScreen() {
+interface DiscoverResult {
+  provider: string;
+  googleClientId?: string;
+  companySlug: string;
+  companyName: string;
+}
+
+export function LoginScreen({ navigation }: any) {
   const { loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [step, setStep] = useState<'email' | 'sso'>('email');
-  const [companyInfo, setCompanyInfo] = useState<{ companyName: string; googleClientId?: string } | null>(null);
+  const [companyInfo, setCompanyInfo] = useState<DiscoverResult | null>(null);
 
   const handleDiscover = async () => {
     const trimmedEmail = email.toLowerCase().trim();
@@ -56,12 +63,12 @@ export function LoginScreen() {
         throw new Error(err.message || 'Company not found');
       }
 
-      const data = await res.json();
+      const data: DiscoverResult = await res.json();
       setCompanyInfo(data);
       setStep('sso');
       setStatus('');
     } catch (e: any) {
-      Alert.alert('Company not found', e.message || 'No company configured for this email domain');
+      Alert.alert('Company not found', e.message || 'No company configured for this email domain. Ask your admin to register.');
     } finally {
       setLoading(false);
     }
@@ -69,12 +76,21 @@ export function LoginScreen() {
 
   const handleGoogleSignIn = async () => {
     if (!nativeAvailable || !GoogleSignin) {
-      Alert.alert('Error', 'Google Sign-In is only available in the EAS build');
+      Alert.alert('Error', 'Google Sign-In requires the native build');
       return;
     }
 
     setLoading(true);
     try {
+      setStatus('Configuring sign-in...');
+      if (companyInfo?.googleClientId) {
+        GoogleSignin.configure({
+          webClientId: companyInfo.googleClientId,
+          offlineAccess: false,
+          scopes: ['openid', 'profile', 'email'],
+        });
+      }
+
       setStatus('Opening Google sign-in...');
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       await GoogleSignin.signIn();
@@ -120,7 +136,7 @@ export function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-            <Text style={styles.backBtnText}>← Use a different email</Text>
+            <Text style={styles.backBtnText}>Use a different email</Text>
           </TouchableOpacity>
 
           {status ? <Text style={styles.status}>{status}</Text> : null}
@@ -154,6 +170,10 @@ export function LoginScreen() {
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Continue</Text>}
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.registerBtn} onPress={() => navigation.navigate('RegisterCompany')}>
+          <Text style={styles.registerBtnText}>Register your company</Text>
+        </TouchableOpacity>
+
         {status ? <Text style={styles.status}>{status}</Text> : null}
       </View>
     </KeyboardAvoidingView>
@@ -174,6 +194,8 @@ const styles = StyleSheet.create({
   continueBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   backBtn: { marginTop: 16, alignItems: 'center' },
   backBtnText: { fontSize: 14, color: '#6366f1', fontWeight: '600' },
+  registerBtn: { marginTop: 12, alignItems: 'center' },
+  registerBtnText: { fontSize: 13, color: '#94a3b8' },
   buttonDisabled: { opacity: 0.6 },
   status: { fontSize: 12, color: '#6366f1', textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
 });

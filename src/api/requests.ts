@@ -127,4 +127,15 @@ export const api = {
       body: JSON.stringify({ name }),
     });
   },
+
+  getCompanySettings(): Promise<{ id: string; name: string; slug: string; domain: string; ssoProvider: string; googleClientId: string }> {
+    return apiRequest(`/companies/${authStore.get().companyId}/settings`);
+  },
+
+  updateCompanySso(dto: { domain?: string; googleClientId?: string }): Promise<{ id: string; name: string; slug: string; domain: string; ssoProvider: string; googleClientId: string }> {
+    return apiRequest(`/companies/${authStore.get().companyId}/sso`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  },
 };

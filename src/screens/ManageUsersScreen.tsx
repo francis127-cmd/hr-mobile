@@ -117,6 +117,10 @@ export function ManageUsersScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity style={styles.inviteBtn} onPress={() => navigation.navigate('SSOSettings' as never)}>
+          <Ionicons name="key-outline" size={18} color="#fff" />
+          <Text style={styles.inviteBtnText}>SSO Settings</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.inviteBtn} onPress={() => navigation.navigate('InviteUser' as never)}>
           <Ionicons name="person-add-outline" size={18} color="#fff" />
           <Text style={styles.inviteBtnText}>Invite User</Text>
@@ -136,7 +140,7 @@ export function ManageUsersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'flex-end', padding: 16, paddingBottom: 0 },
+  header: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, padding: 16, paddingBottom: 0 },
   inviteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#2563eb', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
   inviteBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#e2e8f0' },
