@@ -43,6 +43,7 @@ export function LoginScreen() {
   const [status, setStatus] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [useNative, setUseNative] = useState(false);
+  const [staySignedIn, setStaySignedIn] = useState(false);
 
   useEffect(() => {
     if (nativeAvailable) {
@@ -55,6 +56,9 @@ export function LoginScreen() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
+      if (!staySignedIn) {
+        try { await GoogleSignin.signOut(); } catch {}
+      }
       setStatus('Checking Play Services...');
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
@@ -122,6 +126,15 @@ export function LoginScreen() {
           >
             {loading ? <ActivityIndicator color="#333" /> : <Text style={styles.googleBtnText}>G  Sign in with Google</Text>}
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setStaySignedIn(!staySignedIn)}
+          >
+            <View style={[styles.checkbox, staySignedIn && styles.checkboxChecked]}>
+              {staySignedIn && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxLabel}>Stay signed in</Text>
+          </TouchableOpacity>
           {status ? <Text style={styles.status}>{status}</Text> : null}
         </View>
       </KeyboardAvoidingView>
@@ -166,4 +179,9 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.6 },
   hint: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 12 },
   status: { fontSize: 12, color: '#6366f1', textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 14, gap: 8 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+  checkmark: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  checkboxLabel: { fontSize: 13, color: '#64748b' },
 });

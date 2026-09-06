@@ -69,6 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      const mod = require('@react-native-google-signin/google-signin');
+      await mod.GoogleSignin.signOut();
+    } catch {}
     await authStore.logout();
     setUser(null);
     setMemberships([]);

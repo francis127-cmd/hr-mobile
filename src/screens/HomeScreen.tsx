@@ -177,7 +177,7 @@ export function HomeScreen() {
         />
       )}
 
-      {user?.role === 'EMPLOYEE' && (
+      {(user?.role === 'EMPLOYEE' || user?.role === 'SYSTEM_ADMIN') && (
         <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateRequest', {})} activeOpacity={0.85}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
