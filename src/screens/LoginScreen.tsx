@@ -5,33 +5,52 @@ import {
   Platform,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
 } from 'react-native';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../auth/AuthContext';
 
-GoogleSignin.configure({
-  webClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
-  offlineAccess: false,
-  scopes: ['openid', 'profile', 'email'],
-});
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://euriskoproject.onrender.com';
+
+let GoogleSignin: any = null;
+let statusCodes: any = null;
+let nativeAvailable = false;
+
+try {
+  const mod = require('@react-native-google-signin/google-signin');
+  GoogleSignin = mod.GoogleSignin;
+  statusCodes = mod.statusCodes;
+  GoogleSignin.configure({
+    webClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
+    offlineAccess: false,
+    scopes: ['openid', 'profile', 'email'],
+  });
+  nativeAvailable = true;
+} catch {
+  nativeAvailable = false;
+}
+
+const DEMO_ACCOUNTS = [
+  { label: 'Francis King (System Admin)', sso: 'francis.king' },
+  { label: 'Bob Jones (Employee)', sso: 'bob.jones' },
+  { label: 'Alice Smith (Employee)', sso: 'alice.smith' },
+  { label: 'Carol White (Employee)', sso: 'carol.white' },
+];
 
 export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [signInAvailable, setSignInAvailable] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [useNative, setUseNative] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-        setSignInAvailable(true);
-      } catch {
-        setSignInAvailable(false);
-      }
-    })();
+    if (nativeAvailable) {
+      GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: false })
+        .then(() => setUseNative(true))
+        .catch(() => setUseNative(false));
+    }
   }, []);
 
   const handleGoogleSignIn = async () => {
@@ -40,19 +59,10 @@ export function LoginScreen() {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();
-
-      if (!tokens.idToken) {
-        throw new Error('No ID token received from Google');
-      }
-
+      if (!tokens.idToken) throw new Error('No ID token received');
       await loginWithGoogle(tokens.idToken);
     } catch (e: any) {
-      if (e.code === statusCodes.SIGN_IN_CANCELLED || e.code === statusCodes.IN_PROGRESS) {
-        setLoading(false);
-        return;
-      }
-      if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services not available. Please install or update.');
+      if (e.code === statusCodes.SIGN_IN_CANCELLED) {
         setLoading(false);
         return;
       }
@@ -62,27 +72,64 @@ export function LoginScreen() {
     }
   };
 
+  const handleMockLogin = async (ssoSubject: string) => {
+    setLoading(true);
+    setSelected(ssoSubject);
+    try {
+      const res = await fetch(`${API_BASE}/auth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssoSubject }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Login failed');
+      }
+      const { accessToken } = await res.json();
+      await loginWithGoogle(accessToken);
+    } catch (e: any) {
+      Alert.alert('Login failed', e?.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+      setSelected(null);
+    }
+  };
+
+  if (useNative) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Internal Operations Hub</Text>
+          <Text style={styles.subtitle}>Sign in with your company account</Text>
+          <TouchableOpacity
+            style={[styles.googleBtn, loading && styles.buttonDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#333" /> : <Text style={styles.googleBtnText}>G  Sign in with Google</Text>}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
         <Text style={styles.title}>Internal Operations Hub</Text>
-        <Text style={styles.subtitle}>Sign in with your company account</Text>
-
-        <TouchableOpacity
-          style={[styles.googleBtn, loading && styles.buttonDisabled]}
-          onPress={handleGoogleSignIn}
-          disabled={loading || !signInAvailable}
-        >
-          {loading ? (
-            <ActivityIndicator color="#333" />
-          ) : (
-            <Text style={styles.googleBtnText}>G  Sign in with Google</Text>
-          )}
-        </TouchableOpacity>
-
-        {!signInAvailable && (
-          <Text style={styles.error}>Google Play Services required for sign-in</Text>
-        )}
+        <Text style={styles.subtitle}>Select your account to sign in</Text>
+        {DEMO_ACCOUNTS.map((account) => (
+          <TouchableOpacity
+            key={account.sso}
+            style={[styles.accountBtn, selected === account.sso && styles.accountBtnActive, loading && selected !== account.sso && styles.accountBtnDisabled]}
+            onPress={() => handleMockLogin(account.sso)}
+            disabled={loading}
+          >
+            <Text style={styles.accountName}>{account.label}</Text>
+            <Text style={styles.accountId}>{account.sso}</Text>
+          </TouchableOpacity>
+        ))}
+        <Text style={styles.hint}>Demo mode — run EAS build for Google SSO</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -92,9 +139,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', padding: 24 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 28, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   title: { fontSize: 24, fontWeight: '800', color: '#0f172a', textAlign: 'center', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 28 },
+  subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 24 },
   googleBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 16, alignItems: 'center' },
   googleBtnText: { fontSize: 16, fontWeight: '600', color: '#333' },
+  accountBtn: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 14, marginBottom: 10, backgroundColor: '#f8fafc' },
+  accountBtnActive: { borderColor: '#111827', backgroundColor: '#f1f5f9' },
+  accountBtnDisabled: { opacity: 0.5 },
+  accountName: { fontSize: 15, fontWeight: '600', color: '#1e293b' },
+  accountId: { fontSize: 12, color: '#64748b', marginTop: 2 },
   buttonDisabled: { opacity: 0.6 },
-  error: { fontSize: 12, color: '#dc2626', textAlign: 'center', marginTop: 12 },
+  hint: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 12 },
 });
