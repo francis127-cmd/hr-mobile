@@ -7,36 +7,69 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Linking,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '../auth/AuthContext';
 
-WebBrowser.maybeCompleteAuthSession();
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://euriskoproject.onrender.com';
+const GOOGLE_WEB_CLIENT_ID = '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com';
+const BACKEND_CALLBACK = `${API_BASE}/auth/google/callback`;
+const DEEP_LINK_SCHEME = 'eurisko-hub://auth';
 
 export function LoginScreen() {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
-    expoClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
-  });
-
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      if (id_token) {
-        handleGoogleLogin(id_token);
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (url.startsWith(DEEP_LINK_SCHEME)) {
+        const parsed = new URL(url);
+        const token = parsed.searchParams.get('token');
+        if (token) {
+          handleGoogleLogin(token);
+        }
       }
-    }
-  }, [response]);
+    });
+    return () => sub.remove();
+  }, []);
 
-  const handleGoogleLogin = async (idToken: string) => {
+  const handleGoogleLogin = async (accessToken: string) => {
     setLoading(true);
     try {
-      await loginWithGoogle(idToken);
+      await loginWithGoogle(accessToken);
+    } catch (e: any) {
+      Alert.alert('Login failed', e?.message || 'Google authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const state = Math.random().toString(36).slice(2);
+      const params = new URLSearchParams({
+        client_id: GOOGLE_WEB_CLIENT_ID,
+        redirect_uri: BACKEND_CALLBACK,
+        response_type: 'code',
+        scope: 'openid profile email',
+        state,
+      });
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, DEEP_LINK_SCHEME);
+
+      if (result.type === 'success' && result.url) {
+        const parsed = new URL(result.url);
+        const token = parsed.searchParams.get('token');
+        if (token) {
+          await handleGoogleLogin(token);
+        } else {
+          Alert.alert('Login failed', 'No token received from authentication');
+        }
+      }
     } catch (e: any) {
       Alert.alert('Login failed', e?.message || 'Google authentication failed');
     } finally {
@@ -52,8 +85,8 @@ export function LoginScreen() {
 
         <TouchableOpacity
           style={[styles.googleBtn, loading && styles.buttonDisabled]}
-          onPress={() => promptAsync()}
-          disabled={!request || loading}
+          onPress={handleGoogleSignIn}
+          disabled={loading}
         >
           <Text style={styles.googleBtnText}>G  Sign in with Google</Text>
         </TouchableOpacity>
