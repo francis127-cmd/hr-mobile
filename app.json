@@ -38,6 +38,7 @@
         "@react-native-google-signin/google-signin",
         {
           "webClientId": "804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com",
+          "iosUrlScheme": "804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com",
           "profileImageSize": 120
         }
       ]
