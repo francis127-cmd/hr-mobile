@@ -34,9 +34,8 @@ try {
 
 const DEMO_ACCOUNTS = [
   { label: 'Francis King (System Admin)', sso: 'francis.king' },
-  { label: 'Bob Jones (Employee)', sso: 'bob.jones' },
-  { label: 'Alice Smith (Employee)', sso: 'alice.smith' },
-  { label: 'Carol White (Employee)', sso: 'carol.white' },
+  { label: 'Yorgo Cnam (Employee)', sso: 'yorgo.cnam' },
+  { label: 'James Wilson (Employee)', sso: 'james.wilson' },
 ];
 
 export function LoginScreen() {
