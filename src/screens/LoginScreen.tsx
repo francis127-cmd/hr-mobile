@@ -94,7 +94,7 @@ export function LoginScreen({ navigation }: any) {
     if (!password.trim()) return;
     setLoading(true);
     try {
-      await api.loginPassword(email.trim().toLowerCase(), password);
+      await api.loginPassword(email.trim().toLowerCase(), password, discoverResult?.companySlug);
       // AuthContext will detect the token and navigate to Main
     } catch (e: any) {
       setStatus(e.message || 'Login failed');

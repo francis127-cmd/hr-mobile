@@ -17,10 +17,10 @@ export const api = {
     });
   },
 
-  async loginPassword(email: string, password: string): Promise<{ accessToken: string }> {
+  async loginPassword(email: string, password: string, companySlug?: string): Promise<{ accessToken: string }> {
     const res = await apiRequest<{ accessToken: string }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, companySlug }),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
     authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false);

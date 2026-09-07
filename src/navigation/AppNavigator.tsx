@@ -29,7 +29,6 @@ function AdminTabs() {
   return (
     <AdminStack.Navigator
       screenOptions={{
-        headerBackTitleVisible: false,
         animation: 'slide_from_right',
       }}
     >
@@ -98,7 +97,6 @@ export function AppNavigator() {
   return (
     <RootStack.Navigator
       screenOptions={{
-        headerBackTitleVisible: false,
         animation: 'default',
       }}
     >

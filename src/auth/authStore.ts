@@ -38,7 +38,7 @@ async function loadFromStorage() {
   } catch {}
 }
 
-loadFromStorage();
+export const hydration = loadFromStorage();
 
 export const authStore = {
   get(): AuthState {

@@ -48,6 +48,12 @@ export function RegisterScreen({ navigation, route }: any) {
         return;
       }
     }
+    if (mode === 'join') {
+      if (!companySlug.trim()) {
+        Alert.alert('Error', 'Enter your company slug (ask your admin)');
+        return;
+      }
+    }
 
     setLoading(true);
     try {
@@ -72,6 +78,7 @@ export function RegisterScreen({ navigation, route }: any) {
           email: email.trim().toLowerCase(),
           password,
           displayName: displayName.trim() || undefined,
+          companySlug: companySlug.trim().toLowerCase() || undefined,
         });
       }
     } catch (e: any) {
@@ -104,7 +111,7 @@ export function RegisterScreen({ navigation, route }: any) {
         </View>
 
         {mode === 'join' ? (
-          <Text style={styles.hint}>Your email must match a company domain, or you must have an invitation.</Text>
+          <Text style={styles.hint}>Enter your company slug to join an existing company.</Text>
         ) : (
           <Text style={styles.hint}>Register a new company. You'll be the admin.</Text>
         )}
@@ -146,6 +153,21 @@ export function RegisterScreen({ navigation, route }: any) {
           placeholder="Your Name"
           autoCapitalize="words"
         />
+
+        {mode === 'join' && (
+          <>
+            <Text style={styles.label}>Company Slug *</Text>
+            <TextInput
+              style={styles.input}
+              value={companySlug}
+              onChangeText={setCompanySlug}
+              placeholder="Ask your admin for the slug"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.hint}>The unique identifier for your company (e.g. acme-corp)</Text>
+          </>
+        )}
 
         {mode === 'create' && (
           <>

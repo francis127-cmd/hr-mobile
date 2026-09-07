@@ -16,8 +16,11 @@ export class ApiError extends Error {
 type UnauthorizedHandler = () => void;
 let unauthorizedListener: UnauthorizedHandler | null = null;
 
-export function registerUnauthorizedHandler(handler: UnauthorizedHandler | null) {
+export function registerUnauthorizedHandler(handler: UnauthorizedHandler | null): () => void {
   unauthorizedListener = handler;
+  return () => {
+    if (unauthorizedListener === handler) unauthorizedListener = null;
+  };
 }
 
 function authHeaders(): Record<string, string> {
@@ -99,9 +102,11 @@ export async function apiRequest<T = unknown>(
         ? String(errBody.message)
         : typeof errBody === 'string' ? errBody : '';
 
-      // Login failures return specific messages — don't clear the session for those
-      const isLoginFailure = /invalid credentials|invalid token|unauthorized/i.test(errMsg);
-      if (!isLoginFailure) {
+      // Only authentication endpoints may legitimately return a 401 for bad
+      // credentials. A 401 anywhere else means the persisted JWT is expired
+      // or revoked, even when the server says "invalid token".
+      const isAuthEndpoint = /^\/auth\/(login|google|register|accept-invite)/i.test(path);
+      if (!isAuthEndpoint) {
         await authStore.logout();
         if (unauthorizedListener) {
           unauthorizedListener();

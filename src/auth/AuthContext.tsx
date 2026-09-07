@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { authStore, DEFAULT_API_BASE } from './authStore';
+import { authStore, hydration } from './authStore';
 import { api } from '../api/requests';
 import { registerUnauthorizedHandler } from '../api/client';
 import { DepartmentMember } from '../types';
@@ -51,34 +51,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     // Register listener with API client
-    registerUnauthorizedHandler(handleSessionExpired);
+    const unregisterUnauthorizedHandler = registerUnauthorizedHandler(handleSessionExpired);
 
-    const s = authStore.get();
-    if (s.token && s.ssoSubject) {
-      setUser({
-        ssoSubject: s.ssoSubject,
-        userId: s.userId,
-        displayName: s.displayName,
-        email: s.email,
-        role: s.role,
-        apiBase: s.apiBase,
-        companyId: s.companyId || '',
-      });
-      setNewCompany(s.newCompany);
-      api
-        .myMemberships()
-        .then((m) => setMemberships(m as any))
-        .catch((err) => {
-          if (err?.status === 401) {
-            handleSessionExpired();
-          }
+    void (async () => {
+      await hydration;
+      if (!mounted) return;
+      const s = authStore.get();
+      if (s.token && s.ssoSubject) {
+        setUser({
+          ssoSubject: s.ssoSubject, userId: s.userId, displayName: s.displayName,
+          email: s.email, role: s.role, apiBase: s.apiBase, companyId: s.companyId || '',
         });
-    }
-    setLoading(false);
+        setNewCompany(s.newCompany);
+        try {
+          const m = await api.myMemberships();
+          if (mounted) setMemberships(m as any);
+        } catch (err: any) {
+          if (err?.status === 401) await handleSessionExpired();
+        }
+      }
+      if (mounted) setLoading(false);
+    })();
 
     return () => {
-      registerUnauthorizedHandler(null);
+      mounted = false;
+      unregisterUnauthorizedHandler();
     };
   }, [handleSessionExpired]);
 
