@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
 
-GoogleSignin.configure({
-  webClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
-  scopes: ['profile', 'email'],
-});
+let GoogleSignin: any = null;
+let nativeGoogleAvailable = false;
+
+try {
+  const mod = require('@react-native-google-signin/google-signin');
+  GoogleSignin = mod.GoogleSignin;
+  if (GoogleSignin && typeof GoogleSignin.configure === 'function') {
+    GoogleSignin.configure({
+      webClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+    });
+    nativeGoogleAvailable = true;
+  }
+} catch {
+  nativeGoogleAvailable = false;
+}
 
 export function LoginScreen({ navigation }: any) {
   const { loginWithGoogle } = useAuth();
@@ -56,13 +67,23 @@ export function LoginScreen({ navigation }: any) {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!nativeGoogleAvailable || !GoogleSignin) {
+      Alert.alert(
+        'Native Google Sign-In',
+        'Google Play Services native sign-in requires an EAS development build. When testing in Expo Go or Web, you can sign in with Email & Password.',
+        [
+          { text: 'Use Password', onPress: () => setStep('password') },
+          { text: 'OK' },
+        ],
+      );
+      return;
+    }
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();
       if (tokens.idToken) {
         await loginWithGoogle(tokens.idToken);
-        // AuthContext will detect the token and navigate
       }
     } catch (e: any) {
       setStatus(e.message || 'Google sign-in failed');

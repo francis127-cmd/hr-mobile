@@ -53,7 +53,9 @@ export function RegisterCompanyScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/companies/register`, {
+      const { authStore } = require('../auth/authStore');
+      const base = authStore.get().apiBase || API_BASE;
+      const res = await fetch(`${base}/companies/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

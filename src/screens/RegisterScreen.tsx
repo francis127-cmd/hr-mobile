@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../api/requests';
+import { authStore } from '../auth/authStore';
 
 export function RegisterScreen({ navigation, route }: any) {
   const prefilledEmail = route?.params?.email || '';
@@ -51,8 +52,8 @@ export function RegisterScreen({ navigation, route }: any) {
     setLoading(true);
     try {
       if (mode === 'create') {
-        const API_BASE = 'https://euriskoproject.onrender.com';
-        const res = await fetch(`${API_BASE}/companies/register`, {
+        const { apiBase } = authStore.get();
+        const res = await fetch(`${apiBase}/companies/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

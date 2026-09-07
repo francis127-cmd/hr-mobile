@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authStore, DEFAULT_API_BASE } from './authStore';
 import { api } from '../api/requests';
+import { registerUnauthorizedHandler } from '../api/client';
 import { DepartmentMember } from '../types';
 
 interface AuthUser {
@@ -41,7 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [memberships, setMemberships] = useState<DepartmentMember[]>([]);
   const [newCompany, setNewCompany] = useState(false);
 
+  // Seamless auto-logout and state eviction on 401 token expiry
+  const handleSessionExpired = useCallback(async () => {
+    await authStore.logout();
+    setUser(null);
+    setMemberships([]);
+    setNewCompany(false);
+  }, []);
+
   useEffect(() => {
+    // Register listener with API client
+    registerUnauthorizedHandler(handleSessionExpired);
+
     const s = authStore.get();
     if (s.token && s.ssoSubject) {
       setUser({
@@ -54,10 +66,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         companyId: s.companyId || '',
       });
       setNewCompany(s.newCompany);
-      api.myMemberships().then((m) => setMemberships(m as any)).catch(() => {});
+      api
+        .myMemberships()
+        .then((m) => setMemberships(m as any))
+        .catch((err) => {
+          if (err?.status === 401) {
+            handleSessionExpired();
+          }
+        });
     }
     setLoading(false);
-  }, []);
+
+    return () => {
+      registerUnauthorizedHandler(null);
+    };
+  }, [handleSessionExpired]);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
     const result = await api.loginGoogle(idToken);
@@ -102,11 +125,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const m = await api.myMemberships();
       setMemberships(m as any);
-    } catch {}
-  }, []);
+    } catch (err: any) {
+      if (err?.status === 401) {
+        await handleSessionExpired();
+      }
+    }
+  }, [handleSessionExpired]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, memberships, newCompany, loginWithGoogle, completeSetup, logout, refreshMemberships }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        memberships,
+        newCompany,
+        loginWithGoogle,
+        completeSetup,
+        logout,
+        refreshMemberships,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
