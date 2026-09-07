@@ -12,7 +12,6 @@ export class ApiError extends Error {
   }
 }
 
-// Global listener for auth expiration (401)
 type UnauthorizedHandler = () => void;
 let unauthorizedListener: UnauthorizedHandler | null = null;
 
@@ -30,9 +29,26 @@ function authHeaders(): Record<string, string> {
   return headers;
 }
 
-/**
- * Robust fetch wrapper with timeout, network detection, and offline fallback
- */
+let isRefreshing = false;
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const { refreshToken, apiBase } = authStore.get();
+  if (!refreshToken) throw new Error('No refresh token');
+
+  const res = await fetch(`${apiBase}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!res.ok) throw new Error('Refresh failed');
+
+  const data = await res.json();
+  await authStore.set({ token: data.accessToken, refreshToken: data.refreshToken });
+  return data.accessToken;
+}
+
 async function fetchWithNetworkResilience(
   url: string,
   init: RequestInit,
@@ -52,15 +68,10 @@ async function fetchWithNetworkResilience(
     clearTimeout(timer);
 
     if (err.name === 'AbortError') {
-      throw new ApiError(
-        408,
-        'Request timed out. Please check your internet connection and try again.',
-        true,
-      );
+      throw new ApiError(408, 'Request timed out. Please check your internet connection and try again.', true);
     }
 
-    const isOffline =
-      /network|failed to fetch|internet|offline|connection refused/i.test(err.message || '');
+    const isOffline = /network|failed to fetch|internet|offline|connection refused/i.test(err.message || '');
 
     throw new ApiError(
       0,
@@ -72,9 +83,6 @@ async function fetchWithNetworkResilience(
   }
 }
 
-/**
- * Enterprise API Request with automatic 401 handling, sanitized errors, and retry
- */
 export async function apiRequest<T = unknown>(
   path: string,
   options: RequestInit = {},
@@ -90,29 +98,51 @@ export async function apiRequest<T = unknown>(
   try {
     const res = await fetchWithNetworkResilience(`${apiBase}${path}`, { ...options, headers });
 
-    // Handle 401 — read body first to distinguish login failure from session expiration
     if (res.status === 401) {
       const errContentType = res.headers.get('content-type') ?? '';
       let errBody: any = null;
       try {
         errBody = errContentType.includes('application/json') ? await res.json() : await res.text();
-      } catch { /* ignore parse errors */ }
+      } catch {}
 
       const errMsg = errBody && typeof errBody === 'object' && 'message' in errBody
         ? String(errBody.message)
         : typeof errBody === 'string' ? errBody : '';
 
-      // Only authentication endpoints may legitimately return a 401 for bad
-      // credentials. A 401 anywhere else means the persisted JWT is expired
-      // or revoked, even when the server says "invalid token".
-      const isAuthEndpoint = /^\/auth\/(login|google|register|accept-invite)/i.test(path);
-      if (!isAuthEndpoint) {
-        await authStore.logout();
-        if (unauthorizedListener) {
-          unauthorizedListener();
+      const isAuthEndpoint = /^\/auth\/(login|google|register|accept-invite|mfa\/challenge)/i.test(path);
+
+      if (!isAuthEndpoint && !path.includes('/auth/refresh')) {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken().finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
+        }
+
+        try {
+          const newToken = await refreshPromise!;
+          const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+          const retryRes = await fetchWithNetworkResilience(`${apiBase}${path}`, { ...options, headers: retryHeaders });
+
+          if (retryRes.status === 204) return null as unknown as T;
+          const retryContentType = retryRes.headers.get('content-type') ?? '';
+          const retryBody = retryContentType.includes('application/json') ? await retryRes.json() : await retryRes.text();
+          if (!retryRes.ok) {
+            const retryMsg = retryBody && typeof retryBody === 'object' && 'message' in retryBody
+              ? String((retryBody as { message: unknown }).message) : typeof retryBody === 'string' ? retryBody : retryRes.statusText;
+            throw new ApiError(retryRes.status, retryMsg);
+          }
+          return retryBody as T;
+        } catch (refreshErr: any) {
+          await authStore.logout();
+          if (unauthorizedListener) unauthorizedListener();
+          throw new ApiError(401, 'Your session has expired. Please sign in again.');
         }
       }
 
+      await authStore.logout();
+      if (unauthorizedListener) unauthorizedListener();
       throw new ApiError(401, errMsg || 'Your session has expired. Please sign in again.');
     }
 
@@ -132,7 +162,6 @@ export async function apiRequest<T = unknown>(
           ? String((body as { requestId: unknown }).requestId)
           : undefined;
 
-      // Retry once on transient 503/504 if retries remaining
       if ((res.status === 503 || res.status === 504) && retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 800));
         return apiRequest<T>(path, options, retries - 1);
@@ -143,10 +172,7 @@ export async function apiRequest<T = unknown>(
 
     return body as T;
   } catch (err: any) {
-    if (err instanceof ApiError) {
-      throw err;
-    }
-
+    if (err instanceof ApiError) throw err;
     throw new ApiError(0, err.message || 'An unexpected error occurred.', true);
   }
 }

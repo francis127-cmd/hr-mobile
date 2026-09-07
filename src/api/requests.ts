@@ -17,33 +17,44 @@ export const api = {
     });
   },
 
-  async loginPassword(email: string, password: string, companySlug?: string): Promise<{ accessToken: string }> {
-    const res = await apiRequest<{ accessToken: string }>('/auth/login', {
+  async loginPassword(email: string, password: string, companySlug?: string): Promise<{ accessToken: string; refreshToken?: string; mfaRequired?: boolean; mfaToken?: string }> {
+    const res = await apiRequest<{ accessToken: string; refreshToken?: string; mfaRequired?: boolean; mfaToken?: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password, companySlug }),
     });
+    if (res.mfaRequired) return res;
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false);
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false, res.refreshToken);
     return res;
   },
 
-  async registerPassword(dto: { email: string; password: string; displayName?: string; companyName?: string; companySlug?: string }): Promise<{ accessToken: string; newCompany: boolean }> {
-    const res = await apiRequest<{ accessToken: string; newCompany: boolean }>('/auth/register', {
+  async completeMfa(mfaToken: string, mfaCode: string): Promise<{ accessToken: string; refreshToken?: string }> {
+    const res = await apiRequest<{ accessToken: string; refreshToken?: string }>('/auth/mfa/challenge', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, mfaCode }),
+    });
+    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false, res.refreshToken);
+    return res;
+  },
+
+  async registerPassword(dto: { email: string; password: string; displayName?: string; companyName?: string; companySlug?: string }): Promise<{ accessToken: string; refreshToken?: string; newCompany: boolean }> {
+    const res = await apiRequest<{ accessToken: string; refreshToken?: string; newCompany: boolean }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(dto),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false);
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false, res.refreshToken);
     return res;
   },
 
-  async acceptInvite(token: string, password: string): Promise<{ accessToken: string }> {
-    const res = await apiRequest<{ accessToken: string }>('/auth/accept-invite', {
+  async acceptInvite(token: string, password: string): Promise<{ accessToken: string; refreshToken?: string }> {
+    const res = await apiRequest<{ accessToken: string; refreshToken?: string }>('/auth/accept-invite', {
       method: 'POST',
       body: JSON.stringify({ token, password }),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false);
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false, res.refreshToken);
     return res;
   },
 
@@ -51,15 +62,48 @@ export const api = {
     return apiRequest(`/auth/invitations/${token}`);
   },
 
-  async loginGoogle(idToken: string): Promise<{ newCompany: boolean }> {
+  async loginGoogle(idToken: string): Promise<{ newCompany: boolean; refreshToken?: string }> {
     authStore.set({ ssoSubject: '', token: '' });
-    const res = await apiRequest<{ accessToken: string; newCompany: boolean }>('/auth/google', {
+    const res = await apiRequest<{ accessToken: string; refreshToken?: string; newCompany: boolean }>('/auth/google', {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false);
-    return { newCompany: res.newCompany || false };
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false, res.refreshToken);
+    return { newCompany: res.newCompany || false, refreshToken: res.refreshToken };
+  },
+
+  async logout(): Promise<void> {
+    const { refreshToken } = authStore.get();
+    try {
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {}
+  },
+
+  async mfaSetup(): Promise<{ secret: string; otpauthUrl: string; backupCodes: string[] }> {
+    return apiRequest('/auth/mfa/setup', { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  async mfaVerify(token: string): Promise<boolean> {
+    return apiRequest('/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  },
+
+  async mfaDisable(): Promise<void> {
+    await apiRequest('/auth/mfa/disable', { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  async mfaStatus(): Promise<{ enabled: boolean; backupCodesRemaining: number }> {
+    return apiRequest('/auth/mfa/status');
+  },
+
+  async mfaRegenerateBackupCodes(): Promise<{ backupCodes: string[] }> {
+    return apiRequest('/auth/mfa/regenerate-backup-codes', { method: 'POST', body: JSON.stringify({}) });
   },
 
   catalog(): Promise<Department[]> {
@@ -130,7 +174,6 @@ export const api = {
     return apiRequest('/departments/me/memberships');
   },
 
-  // Admin endpoints
   adminListUsers(): Promise<any[]> {
     return apiRequest<any[]>('/admin/users');
   },

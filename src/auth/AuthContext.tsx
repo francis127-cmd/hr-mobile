@@ -19,10 +19,14 @@ interface AuthCtx {
   loading: boolean;
   memberships: DepartmentMember[];
   newCompany: boolean;
+  mfaRequired: boolean;
+  mfaToken: string | null;
   loginWithGoogle: (idToken: string) => Promise<void>;
   completeSetup: (companyName: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMemberships: () => Promise<void>;
+  handleMfaChallenge: (mfaCode: string) => Promise<void>;
+  clearMfaChallenge: () => void;
 }
 
 const AuthContext = createContext<AuthCtx>({
@@ -30,10 +34,14 @@ const AuthContext = createContext<AuthCtx>({
   loading: true,
   memberships: [],
   newCompany: false,
+  mfaRequired: false,
+  mfaToken: null,
   loginWithGoogle: async () => {},
   completeSetup: async () => {},
   logout: async () => {},
   refreshMemberships: async () => {},
+  handleMfaChallenge: async () => {},
+  clearMfaChallenge: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -41,18 +49,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState<DepartmentMember[]>([]);
   const [newCompany, setNewCompany] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
 
-  // Seamless auto-logout and state eviction on 401 token expiry
   const handleSessionExpired = useCallback(async () => {
     await authStore.logout();
     setUser(null);
     setMemberships([]);
     setNewCompany(false);
+    setMfaRequired(false);
+    setMfaToken(null);
   }, []);
 
   useEffect(() => {
     let mounted = true;
-    // Register listener with API client
     const unregisterUnauthorizedHandler = registerUnauthorizedHandler(handleSessionExpired);
 
     void (async () => {
@@ -110,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const logout = useCallback(async () => {
+    try { await api.logout(); } catch {}
     try {
       const mod = require('@react-native-google-signin/google-signin');
       await mod.GoogleSignin.signOut();
@@ -118,6 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setMemberships([]);
     setNewCompany(false);
+    setMfaRequired(false);
+    setMfaToken(null);
   }, []);
 
   const refreshMemberships = useCallback(async () => {
@@ -131,6 +144,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [handleSessionExpired]);
 
+  const handleMfaChallenge = useCallback(async (mfaCode: string) => {
+    if (!mfaToken) throw new Error('No MFA session');
+    await api.completeMfa(mfaToken, mfaCode);
+    const s = authStore.get();
+    setUser({
+      ssoSubject: s.ssoSubject,
+      userId: s.userId,
+      displayName: s.displayName,
+      email: s.email,
+      role: s.role,
+      apiBase: s.apiBase,
+      companyId: s.companyId || '',
+    });
+    setMfaRequired(false);
+    setMfaToken(null);
+    try {
+      const m = await api.myMemberships();
+      setMemberships(m as any);
+    } catch {}
+  }, [mfaToken]);
+
+  const clearMfaChallenge = useCallback(() => {
+    setMfaRequired(false);
+    setMfaToken(null);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -138,10 +177,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         memberships,
         newCompany,
+        mfaRequired,
+        mfaToken,
         loginWithGoogle,
         completeSetup,
         logout,
         refreshMemberships,
+        handleMfaChallenge,
+        clearMfaChallenge,
       }}
     >
       {children}

@@ -21,12 +21,14 @@ try {
 }
 
 export function LoginScreen({ navigation }: any) {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, handleMfaChallenge } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
-  const [step, setStep] = useState<'email' | 'sso' | 'password'>('email');
+  const [step, setStep] = useState<'email' | 'sso' | 'password' | 'mfa'>('email');
   const [discoverResult, setDiscoverResult] = useState<any>(null);
+  const [mfaToken, setMfaToken] = useState<string>('');
+  const [mfaCode, setMfaCode] = useState('');
 
   const handleDiscover = async () => {
     if (!email.trim()) return;
@@ -37,7 +39,6 @@ export function LoginScreen({ navigation }: any) {
       setDiscoverResult(result);
 
       if (result.authMode === 'SSO') {
-        // Configure GoogleSignin with company's client ID
         if (result.googleClientId) {
           GoogleSignin.configure({
             webClientId: result.googleClientId,
@@ -51,11 +52,9 @@ export function LoginScreen({ navigation }: any) {
         setStep('password');
         setStatus('');
       } else {
-        // REGISTER mode — no company found
         navigation.navigate('Register', { email: email.trim().toLowerCase() });
       }
     } catch (e: any) {
-      // If domain not found, offer registration
       if (e.status === 404) {
         navigation.navigate('Register', { email: email.trim().toLowerCase() });
       } else {
@@ -93,11 +92,32 @@ export function LoginScreen({ navigation }: any) {
   const handlePasswordLogin = async (password: string) => {
     if (!password.trim()) return;
     setLoading(true);
+    setStatus('');
     try {
-      await api.loginPassword(email.trim().toLowerCase(), password, discoverResult?.companySlug);
-      // AuthContext will detect the token and navigate to Main
+      const result = await api.loginPassword(email.trim().toLowerCase(), password, discoverResult?.companySlug);
+      if (result.mfaRequired && result.mfaToken) {
+        setMfaToken(result.mfaToken);
+        setStep('mfa');
+        setStatus('');
+      }
     } catch (e: any) {
       setStatus(e.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaSubmit = async () => {
+    if (!mfaCode.trim() || mfaCode.length < 6) {
+      Alert.alert('Error', 'Enter a valid 6-digit code');
+      return;
+    }
+    setLoading(true);
+    setStatus('');
+    try {
+      await handleMfaChallenge(mfaCode);
+    } catch (e: any) {
+      setStatus(e.message || 'Invalid MFA code');
     } finally {
       setLoading(false);
     }
@@ -107,9 +127,48 @@ export function LoginScreen({ navigation }: any) {
     setStep('email');
     setDiscoverResult(null);
     setStatus('');
+    setMfaToken('');
+    setMfaCode('');
   };
 
-  // PASSWORD mode — show password input
+  if (step === 'mfa') {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Two-Factor Verification</Text>
+          <Text style={styles.subtitle}>Enter the 6-digit code from your authenticator app</Text>
+
+          <Text style={styles.email}>{email}</Text>
+
+          <Text style={styles.label}>MFA Code</Text>
+          <TextInput
+            style={styles.mfaInput}
+            value={mfaCode}
+            onChangeText={setMfaCode}
+            placeholder="000000"
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+          />
+
+          <TouchableOpacity
+            style={[styles.continueBtn, loading && styles.buttonDisabled]}
+            onPress={handleMfaSubmit}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Verify</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+            <Text style={styles.backBtnText}>Use a different email</Text>
+          </TouchableOpacity>
+
+          {status ? <Text style={styles.status}>{status}</Text> : null}
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
   if (step === 'password') {
     return (
       <PasswordStep
@@ -123,7 +182,6 @@ export function LoginScreen({ navigation }: any) {
     );
   }
 
-  // SSO mode — show Google sign-in
   if (step === 'sso') {
     return (
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -151,7 +209,6 @@ export function LoginScreen({ navigation }: any) {
     );
   }
 
-  // EMAIL step — default
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
@@ -241,6 +298,7 @@ const styles = StyleSheet.create({
   email: { fontSize: 14, color: '#111827', textAlign: 'center', marginBottom: 20, fontWeight: '600' },
   label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
   input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 20, backgroundColor: '#f8fafc' },
+  mfaInput: { borderWidth: 2, borderColor: '#2563eb', borderRadius: 12, padding: 18, fontSize: 28, textAlign: 'center', marginBottom: 20, fontWeight: '700', letterSpacing: 8, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   googleBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 16, alignItems: 'center' },
   googleBtnText: { fontSize: 16, fontWeight: '600', color: '#333' },
   continueBtn: { backgroundColor: '#2563eb', borderRadius: 10, padding: 16, alignItems: 'center' },

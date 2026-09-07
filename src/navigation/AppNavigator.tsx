@@ -16,11 +16,13 @@ import { ManageUsersScreen } from '../screens/ManageUsersScreen';
 import { CompanySetupScreen } from '../screens/CompanySetupScreen';
 import { SSOSettingsScreen } from '../screens/SSOSettingsScreen';
 import { RegisterCompanyScreen } from '../screens/RegisterCompanyScreen';
+import { MfaSetupScreen } from '../screens/MfaSetupScreen';
+import { MfaChallengeScreen } from '../screens/MfaChallengeScreen';
+import { MfaSettingsScreen } from '../screens/MfaSettingsScreen';
 import { useAuth, canManageAll } from '../auth/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
 
-// Stable module-level navigator singletons to prevent re-creation memory leaks
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const MainTab = createBottomTabNavigator();
 const AdminStack = createNativeStackNavigator();
@@ -46,6 +48,11 @@ function AdminTabs() {
         name="SSOSettings"
         component={SSOSettingsScreen}
         options={{ title: 'SSO Settings' }}
+      />
+      <AdminStack.Screen
+        name="MfaSettings"
+        component={MfaSettingsScreen}
+        options={{ title: 'MFA Settings' }}
       />
     </AdminStack.Navigator>
   );
@@ -84,7 +91,7 @@ function MainTabs() {
 }
 
 export function AppNavigator() {
-  const { user, loading, newCompany } = useAuth();
+  const { user, loading, newCompany, mfaRequired, mfaToken } = useAuth();
 
   if (loading) {
     return (
@@ -106,6 +113,7 @@ export function AppNavigator() {
           <RootStack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create Account' }} />
           <RootStack.Screen name="AcceptInvite" component={AcceptInviteScreen} options={{ title: 'Accept Invitation' }} />
           <RootStack.Screen name="RegisterCompany" component={RegisterCompanyScreen} options={{ title: 'Register Company' }} />
+          <RootStack.Screen name="MfaChallenge" component={MfaChallengeScreen} options={{ title: 'MFA Verification' }} />
         </>
       ) : newCompany ? (
         <RootStack.Screen name="CompanySetup" component={CompanySetupScreen} options={{ headerShown: false }} />
@@ -115,6 +123,8 @@ export function AppNavigator() {
           <RootStack.Screen name="CreateRequest" component={CreateRequestScreen} options={{ title: 'New Request' }} />
           <RootStack.Screen name="RequestDetail" component={RequestDetailScreen} options={{ title: 'Request' }} />
           <RootStack.Screen name="DepartmentQueue" component={DepartmentQueueScreen} options={{ title: 'Department Queue' }} />
+          <RootStack.Screen name="MfaSetup" component={MfaSetupScreen} options={{ title: 'MFA Setup' }} />
+          <RootStack.Screen name="MfaSettings" component={MfaSettingsScreen} options={{ title: 'MFA Settings' }} />
         </>
       )}
     </RootStack.Navigator>
