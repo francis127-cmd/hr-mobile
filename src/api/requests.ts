@@ -212,14 +212,40 @@ export const api = {
     });
   },
 
-  getCompanySettings(): Promise<{ id: string; name: string; slug: string; domain: string; authMode: string; ssoProvider: string; googleClientId: string }> {
+  getCompanySettings(): Promise<{ id: string; name: string; slug: string; domain: string; authMode: string; ssoProvider: string; googleClientId: string; mfaRequired: boolean; refreshTokenExpiryDays: number }> {
     return apiRequest(`/companies/${authStore.get().companyId}/settings`);
   },
 
-  updateCompanySso(dto: { domain?: string; googleClientId?: string; authMode?: string }): Promise<{ id: string; name: string; slug: string; domain: string; authMode: string; ssoProvider: string; googleClientId: string }> {
+  updateCompanySso(dto: { domain?: string; googleClientId?: string; authMode?: string; mfaRequired?: boolean; refreshTokenExpiryDays?: number }): Promise<{ id: string; name: string; slug: string; domain: string; authMode: string; ssoProvider: string; googleClientId: string; mfaRequired: boolean; refreshTokenExpiryDays: number }> {
     return apiRequest(`/companies/${authStore.get().companyId}/sso`, {
       method: 'PATCH',
       body: JSON.stringify(dto),
     });
+  },
+
+  oidcListProviders(): Promise<any[]> {
+    return apiRequest<any[]>('/oidc/providers');
+  },
+
+  oidcCreateProvider(dto: { name: string; issuer: string; clientId: string; clientSecret: string; discoveryUrl: string; redirectUri: string; scopes?: string }): Promise<any> {
+    return apiRequest<any>('/oidc/providers', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  },
+
+  oidcUpdateProvider(id: string, dto: { name?: string; clientId?: string; clientSecret?: string; scopes?: string; active?: boolean }): Promise<any> {
+    return apiRequest<any>(`/oidc/providers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  },
+
+  oidcDeleteProvider(id: string): Promise<void> {
+    return apiRequest<void>(`/oidc/providers/${id}`, { method: 'DELETE' });
+  },
+
+  oidcDiscoverProviders(companySlug: string): Promise<{ providers: any[] }> {
+    return apiRequest(`/oidc/discover/${companySlug}`);
   },
 };

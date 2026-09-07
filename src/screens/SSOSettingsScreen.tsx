@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Switch } from 'react-native';
 import { api } from '../api/requests';
 
-export function SSOSettingsScreen() {
+export function SSOSettingsScreen({ navigation }: any) {
   const [domain, setDomain] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companySlug, setCompanySlug] = useState('');
   const [authMode, setAuthMode] = useState('PASSWORD');
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [refreshTokenExpiryDays, setRefreshTokenExpiryDays] = useState('7');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -23,6 +25,8 @@ export function SSOSettingsScreen() {
       setDomain(data.domain || '');
       setGoogleClientId(data.googleClientId || '');
       setAuthMode(data.authMode || 'PASSWORD');
+      setMfaRequired(data.mfaRequired || false);
+      setRefreshTokenExpiryDays(String(data.refreshTokenExpiryDays || 7));
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to load settings');
     } finally {
@@ -33,10 +37,18 @@ export function SSOSettingsScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const days = parseInt(refreshTokenExpiryDays, 10);
+      if (isNaN(days) || days < 1 || days > 90) {
+        Alert.alert('Error', 'Refresh token expiry must be between 1 and 90 days');
+        setSaving(false);
+        return;
+      }
       await api.updateCompanySso({
         domain: domain.trim().toLowerCase() || undefined,
         googleClientId: googleClientId.trim() || undefined,
         authMode,
+        mfaRequired,
+        refreshTokenExpiryDays: days,
       });
       Alert.alert('Success', 'Settings updated');
     } catch (e: any) {
@@ -53,7 +65,7 @@ export function SSOSettingsScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Company Settings</Text>
-      <Text style={styles.subtitle}>Configure authentication and SSO for your organization.</Text>
+      <Text style={styles.subtitle}>Configure authentication, SSO, and security policies.</Text>
 
       <Text style={styles.label}>Company Name</Text>
       <TextInput style={[styles.input, styles.inputDisabled]} value={companyName} editable={false} />
@@ -71,7 +83,7 @@ export function SSOSettingsScreen() {
           <Text style={[styles.authModeText, authMode === 'PASSWORD' && styles.authModeTextActive]}>
             Email + Password
           </Text>
-          <Text style={styles.authModeDesc}>Employees sign in with email and password</Text>
+          <Text style={styles.authModeDesc}>Sign in with email and password</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.authModeBtn, authMode === 'SSO' && styles.authModeBtnActive]}
@@ -80,7 +92,7 @@ export function SSOSettingsScreen() {
           <Text style={[styles.authModeText, authMode === 'SSO' && styles.authModeTextActive]}>
             Google SSO
           </Text>
-          <Text style={styles.authModeDesc}>Employees sign in via Google OAuth</Text>
+          <Text style={styles.authModeDesc}>Sign in via Google OAuth</Text>
         </TouchableOpacity>
       </View>
 
@@ -110,11 +122,56 @@ export function SSOSettingsScreen() {
         </>
       )}
 
-      {authMode === 'PASSWORD' && (
-        <Text style={styles.hint}>
-          Employees will sign in with their email and password. Admin can invite users from the Manage Users screen.
-        </Text>
-      )}
+      {/* Security Section */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Security Policies</Text>
+      </View>
+
+      <View style={styles.settingRow}>
+        <View style={styles.settingInfo}>
+          <Text style={styles.settingLabel}>Require MFA for All Users</Text>
+          <Text style={styles.settingHint}>Enforce two-factor authentication at login</Text>
+        </View>
+        <Switch
+          value={mfaRequired}
+          onValueChange={setMfaRequired}
+          trackColor={{ false: '#cbd5e1', true: '#93c5fd' }}
+          thumbColor={mfaRequired ? '#2563eb' : '#f1f5f9'}
+        />
+      </View>
+
+      <View style={styles.settingRow}>
+        <View style={styles.settingInfo}>
+          <Text style={styles.settingLabel}>Refresh Token Expiry</Text>
+          <Text style={styles.settingHint}>Days before refresh token expires (1-90)</Text>
+        </View>
+        <TextInput
+          style={styles.smallInput}
+          value={refreshTokenExpiryDays}
+          onChangeText={setRefreshTokenExpiryDays}
+          keyboardType="number-pad"
+          maxLength={2}
+        />
+      </View>
+
+      {/* OIDC Providers */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>External Identity Providers</Text>
+      </View>
+
+      <TouchableOpacity
+        style={styles.linkBtn}
+        onPress={() => navigation.navigate('OidcProviders')}
+      >
+        <Text style={styles.linkBtnText}>Manage OIDC Providers</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkBtn}
+        onPress={() => navigation.navigate('MfaSettings')}
+      >
+        <Text style={styles.linkBtnText}>My MFA Settings</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
         {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Settings</Text>}
@@ -128,6 +185,8 @@ export function SSOSettingsScreen() {
           ) : (
             `SSO Mode:\n• Employees enter their work email\n• App looks up your company by domain\n• Employee signs in with Google\n• Server validates the token belongs to your domain`
           )}
+          {mfaRequired ? '\n\nMFA Required: All users must set up two-factor authentication' : ''}
+          {`\n\nRefresh tokens expire after ${refreshTokenExpiryDays} day(s)`}
         </Text>
       </View>
     </ScrollView>
@@ -149,10 +208,19 @@ const styles = StyleSheet.create({
   authModeText: { fontSize: 14, fontWeight: '700', color: '#64748b', textAlign: 'center' },
   authModeTextActive: { color: '#2563eb' },
   authModeDesc: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 4 },
+  sectionHeader: { marginTop: 24, marginBottom: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
+  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  settingInfo: { flex: 1, marginRight: 12 },
+  settingLabel: { fontSize: 14, fontWeight: '600', color: '#334155' },
+  settingHint: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  smallInput: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 8, width: 50, textAlign: 'center', fontSize: 16, fontWeight: '600' },
+  linkBtn: { backgroundColor: '#f1f5f9', borderRadius: 10, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  linkBtnText: { fontSize: 14, fontWeight: '600', color: '#2563eb', textAlign: 'center' },
   saveBtn: { backgroundColor: '#2563eb', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 24 },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  infoBox: { backgroundColor: '#f1f5f9', borderRadius: 10, padding: 16, marginTop: 20 },
+  infoBox: { backgroundColor: '#f1f5f9', borderRadius: 10, padding: 16, marginTop: 20, marginBottom: 40 },
   infoTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
   infoText: { fontSize: 13, color: '#475569', lineHeight: 20 },
 });

@@ -19,6 +19,7 @@ import { RegisterCompanyScreen } from '../screens/RegisterCompanyScreen';
 import { MfaSetupScreen } from '../screens/MfaSetupScreen';
 import { MfaChallengeScreen } from '../screens/MfaChallengeScreen';
 import { MfaSettingsScreen } from '../screens/MfaSettingsScreen';
+import { OidcProvidersScreen } from '../screens/OidcProvidersScreen';
 import { useAuth, canManageAll } from '../auth/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
@@ -53,6 +54,11 @@ function AdminTabs() {
         name="MfaSettings"
         component={MfaSettingsScreen}
         options={{ title: 'MFA Settings' }}
+      />
+      <AdminStack.Screen
+        name="OidcProviders"
+        component={OidcProvidersScreen}
+        options={{ title: 'OIDC Providers' }}
       />
     </AdminStack.Navigator>
   );
@@ -125,6 +131,7 @@ export function AppNavigator() {
           <RootStack.Screen name="DepartmentQueue" component={DepartmentQueueScreen} options={{ title: 'Department Queue' }} />
           <RootStack.Screen name="MfaSetup" component={MfaSetupScreen} options={{ title: 'MFA Setup' }} />
           <RootStack.Screen name="MfaSettings" component={MfaSettingsScreen} options={{ title: 'MFA Settings' }} />
+          <RootStack.Screen name="OidcProviders" component={OidcProvidersScreen} options={{ title: 'OIDC Providers' }} />
         </>
       )}
     </RootStack.Navigator>

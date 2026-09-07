@@ -16,6 +16,7 @@ export type RootStackParamList = {
   MfaSetup: undefined;
   MfaChallenge: undefined;
   MfaSettings: undefined;
+  OidcProviders: undefined;
 };
 
 export type RootNavigation = NativeStackScreenProps<RootStackParamList, 'Main'>['navigation'];
