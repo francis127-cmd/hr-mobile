@@ -50,14 +50,30 @@ export function RegisterScreen({ navigation, route }: any) {
 
     setLoading(true);
     try {
-      const result = await api.registerPassword({
-        email: email.trim().toLowerCase(),
-        password,
-        displayName: displayName.trim() || undefined,
-        companyName: mode === 'create' ? companyName.trim() : undefined,
-        companySlug: mode === 'create' ? companySlug.trim().toLowerCase() : undefined,
-      });
-      // AuthContext will detect the token and navigate
+      if (mode === 'create') {
+        const API_BASE = 'https://euriskoproject.onrender.com';
+        const res = await fetch(`${API_BASE}/companies/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: companyName.trim(),
+            slug: companySlug.trim().toLowerCase(),
+            domain: email.trim().toLowerCase().split('@')[1],
+            adminEmail: email.trim().toLowerCase(),
+            adminName: displayName.trim() || email.split('@')[0],
+            adminPassword: password,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Company registration failed');
+        await api.loginPassword(email.trim().toLowerCase(), password);
+      } else {
+        await api.registerPassword({
+          email: email.trim().toLowerCase(),
+          password,
+          displayName: displayName.trim() || undefined,
+        });
+      }
     } catch (e: any) {
       Alert.alert('Registration Failed', e.message || 'Failed to register');
     } finally {
