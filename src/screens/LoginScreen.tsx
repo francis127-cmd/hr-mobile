@@ -39,7 +39,7 @@ export function LoginScreen({ navigation }: any) {
       setDiscoverResult(result);
 
       if (result.authMode === 'SSO') {
-        if (result.googleClientId) {
+        if (result.googleClientId && nativeGoogleAvailable && GoogleSignin) {
           GoogleSignin.configure({
             webClientId: result.googleClientId,
             scopes: ['profile', 'email'],
@@ -176,6 +176,8 @@ export function LoginScreen({ navigation }: any) {
         companyName={discoverResult?.companyName}
         onLogin={handlePasswordLogin}
         onBack={handleBack}
+        onSso={handleGoogleSignIn}
+        hasSso={!!discoverResult?.googleClientId}
         loading={loading}
         status={status}
       />
@@ -244,11 +246,13 @@ export function LoginScreen({ navigation }: any) {
   );
 }
 
-function PasswordStep({ email, companyName, onLogin, onBack, loading, status }: {
+function PasswordStep({ email, companyName, onLogin, onBack, onSso, hasSso, loading, status }: {
   email: string;
   companyName?: string;
   onLogin: (password: string) => void;
   onBack: () => void;
+  onSso: () => void;
+  hasSso: boolean;
   loading: boolean;
   status: string;
 }) {
@@ -279,6 +283,24 @@ function PasswordStep({ email, companyName, onLogin, onBack, loading, status }: 
         >
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Sign In</Text>}
         </TouchableOpacity>
+
+        {hasSso && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 16 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+              <Text style={{ marginHorizontal: 12, color: '#94a3b8', fontSize: 13 }}>or</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleBtn, loading && styles.buttonDisabled]}
+              onPress={onSso}
+              disabled={loading}
+            >
+              <Text style={styles.googleBtnText}>G  Sign in with Google</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>Use a different email</Text>

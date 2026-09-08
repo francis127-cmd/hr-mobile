@@ -65,6 +65,7 @@ export function RegisterScreen({ navigation, route }: any) {
           body: JSON.stringify({
             name: companyName.trim(),
             slug: companySlug.trim().toLowerCase(),
+            domain: email.split('@')[1]?.toLowerCase(),
             adminEmail: email.trim().toLowerCase(),
             adminName: displayName.trim() || email.split('@')[0],
             adminPassword: password,
