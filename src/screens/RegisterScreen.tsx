@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../api/requests';
-import { authStore } from '../auth/authStore';
 
 export function RegisterScreen({ navigation, route }: any) {
   const prefilledEmail = route?.params?.email || '';
@@ -12,7 +11,7 @@ export function RegisterScreen({ navigation, route }: any) {
   const [companyName, setCompanyName] = useState('');
   const [companySlug, setCompanySlug] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'join' | 'create'>('join');
+  const [mode, setMode] = useState<'join' | 'create'>(route?.params?.mode === 'create' ? 'create' : 'join');
 
   const generateSlug = (name: string) => {
     return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -58,21 +57,14 @@ export function RegisterScreen({ navigation, route }: any) {
     setLoading(true);
     try {
       if (mode === 'create') {
-        const { apiBase } = authStore.get();
-        const res = await fetch(`${apiBase}/companies/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        await api.registerCompany({
             name: companyName.trim(),
             slug: companySlug.trim().toLowerCase(),
             domain: email.split('@')[1]?.toLowerCase(),
             adminEmail: email.trim().toLowerCase(),
             adminName: displayName.trim() || email.split('@')[0],
             adminPassword: password,
-          }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Company registration failed');
         await api.loginPassword(email.trim().toLowerCase(), password);
       } else {
         await api.registerPassword({

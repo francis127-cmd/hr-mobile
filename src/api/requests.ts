@@ -10,6 +10,12 @@ import {
 import { authStore } from '../auth/authStore';
 
 export const api = {
+  async registerCompany(dto: {
+    name: string; slug: string; domain?: string; authMode?: string;
+    googleClientId?: string; adminEmail: string; adminPassword?: string; adminName?: string;
+  }): Promise<any> {
+    return apiRequest('/companies/register', { method: 'POST', body: JSON.stringify(dto) });
+  },
   async discover(email: string): Promise<{ authMode: string; companySlug?: string; companyName?: string; companyId?: string; provider?: string; googleClientId?: string }> {
     return apiRequest('/auth/discover', {
       method: 'POST',

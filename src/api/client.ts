@@ -36,7 +36,7 @@ async function refreshAccessToken(): Promise<string> {
   const { refreshToken, apiBase } = authStore.get();
   if (!refreshToken) throw new Error('No refresh token');
 
-  const res = await fetch(`${apiBase}/auth/refresh`, {
+  const res = await fetchWithNetworkResilience(`${apiBase}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),

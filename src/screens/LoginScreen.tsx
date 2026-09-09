@@ -52,7 +52,7 @@ export function LoginScreen({ navigation }: any) {
         setStep('password');
         setStatus('');
       } else {
-        navigation.navigate('Register', { email: email.trim().toLowerCase() });
+        navigation.navigate('Register', { email: email.trim().toLowerCase(), mode: 'create' });
       }
     } catch (e: any) {
       if (e.status === 404) {

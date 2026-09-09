@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://euriskoproject.onrender.com';
+import { api } from '../api/requests';
 
 export function RegisterCompanyScreen({ navigation }: any) {
   const [name, setName] = useState('');
@@ -53,26 +52,16 @@ export function RegisterCompanyScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      const { authStore } = require('../auth/authStore');
-      const base = authStore.get().apiBase || API_BASE;
-      const res = await fetch(`${base}/companies/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const data = await api.registerCompany({
           name: name.trim(),
           slug: slug.trim().toLowerCase(),
           domain: domain.trim().toLowerCase(),
+          authMode,
           adminEmail: adminEmail.trim().toLowerCase(),
           adminName: adminName.trim() || adminEmail.split('@')[0],
           adminPassword: authMode === 'PASSWORD' ? adminPassword : undefined,
           googleClientId: authMode === 'SSO' ? googleClientId.trim() || undefined : undefined,
-        }),
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
 
       Alert.alert(
         'Company Registered!',

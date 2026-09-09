@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const DEFAULT_API_BASE = 'https://euriskoproject.onrender.com';
+const CONFIGURED_API_BASE = (process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_BASE).replace(/\/$/, '');
 
 interface AuthState {
   ssoSubject: string;
@@ -19,7 +20,7 @@ let state: AuthState = {
   ssoSubject: '',
   token: '',
   refreshToken: '',
-  apiBase: DEFAULT_API_BASE,
+  apiBase: CONFIGURED_API_BASE,
   role: '',
   displayName: '',
   email: '',
@@ -35,7 +36,10 @@ async function loadFromStorage() {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      state = { ...state, ...parsed };
+      // Keep the deployed endpoint controlled by build configuration. Older
+      // builds may have persisted a dead/stale API URL and make every screen
+      // look offline after an upgrade.
+      state = { ...state, ...parsed, apiBase: CONFIGURED_API_BASE };
     }
   } catch {}
 }
@@ -85,7 +89,7 @@ export const authStore = {
       ssoSubject: '',
       token: '',
       refreshToken: '',
-      apiBase: DEFAULT_API_BASE,
+    apiBase: CONFIGURED_API_BASE,
       role: '',
       displayName: '',
       email: '',
