@@ -21,7 +21,7 @@ try {
 }
 
 export function LoginScreen({ navigation }: any) {
-  const { loginWithGoogle, handleMfaChallenge } = useAuth();
+  const { loginWithGoogle, loginWithPassword, handleMfaChallenge } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
@@ -99,6 +99,8 @@ export function LoginScreen({ navigation }: any) {
         setMfaToken(result.mfaToken);
         setStep('mfa');
         setStatus('');
+      } else {
+        loginWithPassword();
       }
     } catch (e: any) {
       setStatus(e.message || 'Login failed');

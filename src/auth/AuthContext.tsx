@@ -22,6 +22,7 @@ interface AuthCtx {
   mfaRequired: boolean;
   mfaToken: string | null;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithPassword: () => void;
   completeSetup: (companyName: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMemberships: () => Promise<void>;
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthCtx>({
   mfaRequired: false,
   mfaToken: null,
   loginWithGoogle: async () => {},
+  loginWithPassword: () => {},
   completeSetup: async () => {},
   logout: async () => {},
   refreshMemberships: async () => {},
@@ -111,6 +113,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  const loginWithPassword = useCallback(() => {
+    const s = authStore.get();
+    if (s.token && s.ssoSubject) {
+      setUser({
+        ssoSubject: s.ssoSubject,
+        userId: s.userId,
+        displayName: s.displayName,
+        email: s.email,
+        role: s.role,
+        apiBase: s.apiBase,
+        companyId: s.companyId || '',
+      });
+      setNewCompany(s.newCompany);
+    }
+  }, []);
+
   const completeSetup = useCallback(async (companyName: string) => {
     if (user?.companyId) {
       await api.updateCompany(user.companyId, companyName);
@@ -180,6 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         mfaRequired,
         mfaToken,
         loginWithGoogle,
+        loginWithPassword,
         completeSetup,
         logout,
         refreshMemberships,

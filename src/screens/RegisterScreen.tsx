@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../api/requests';
+import { useAuth } from '../auth/AuthContext';
 
 export function RegisterScreen({ navigation, route }: any) {
+  const { loginWithPassword } = useAuth();
   const prefilledEmail = route?.params?.email || '';
   const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState('');
@@ -66,6 +68,7 @@ export function RegisterScreen({ navigation, route }: any) {
             adminPassword: password,
         });
         await api.loginPassword(email.trim().toLowerCase(), password);
+        loginWithPassword();
       } else {
         await api.registerPassword({
           email: email.trim().toLowerCase(),
@@ -73,6 +76,7 @@ export function RegisterScreen({ navigation, route }: any) {
           displayName: displayName.trim() || undefined,
           companySlug: companySlug.trim().toLowerCase() || undefined,
         });
+        loginWithPassword();
       }
     } catch (e: any) {
       Alert.alert('Registration Failed', e.message || 'Failed to register');
