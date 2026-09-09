@@ -31,11 +31,14 @@ export function CreateRequestScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     api.catalog().then((depts) => {
-      setDepartments(depts);
-      if (!selectedDept && depts.length > 0) {
-        setSelectedDept(depts[0].code);
-        if (depts[0].requestTypes.length > 0) {
-          setSelectedType(depts[0].requestTypes[0].code);
+      // Belt-and-braces: dedupe by code so a backend tenant leak can never
+      // render the same department multiple times in the picker.
+      const uniq = [...new Map(depts.map((d) => [d.code, d])).values()];
+      setDepartments(uniq);
+      if (!selectedDept && uniq.length > 0) {
+        setSelectedDept(uniq[0].code);
+        if (uniq[0].requestTypes.length > 0) {
+          setSelectedType(uniq[0].requestTypes[0].code);
         }
       }
     });

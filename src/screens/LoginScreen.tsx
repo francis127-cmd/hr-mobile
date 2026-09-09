@@ -218,6 +218,7 @@ export function LoginScreen({ navigation }: any) {
       <View style={styles.card}>
         <Text style={styles.title}>Internal Operations Hub</Text>
         <Text style={styles.subtitle}>Enter your work email to sign in</Text>
+        <Text style={styles.ssoHint}>SSO users: just enter your work email — we'll route you to your company's sign-in.</Text>
 
         <Text style={styles.label}>Work Email</Text>
         <TextInput
@@ -318,7 +319,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', padding: 24 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 28, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   title: { fontSize: 24, fontWeight: '800', color: '#0f172a', textAlign: 'center', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 24 },
+  subtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 8 },
+  ssoHint: { fontSize: 12, color: '#94a3b8', textAlign: 'center', marginBottom: 24 },
   email: { fontSize: 14, color: '#111827', textAlign: 'center', marginBottom: 20, fontWeight: '600' },
   label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 6 },
   input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 20, backgroundColor: '#f8fafc' },

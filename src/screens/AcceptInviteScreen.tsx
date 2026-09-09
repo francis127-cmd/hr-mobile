@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../api/requests';
+import { useAuth } from '../auth/AuthContext';
 
 export function AcceptInviteScreen({ navigation, route }: any) {
+  const { loginWithPassword } = useAuth();
   const token = route?.params?.token;
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,7 +46,7 @@ export function AcceptInviteScreen({ navigation, route }: any) {
     setLoading(true);
     try {
       await api.acceptInvite(token, password);
-      // AuthContext will detect the token and navigate
+      loginWithPassword();
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to accept invitation');
     } finally {

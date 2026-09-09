@@ -11,7 +11,9 @@ export function InviteUserScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api.adminListDepartments().then(setDepartments).catch(() => {});
+    api.adminListDepartments()
+      .then((ds) => setDepartments([...new Map(ds.map((d) => [d.code, d])).values()]))
+      .catch(() => {});
   }, []);
 
   const handleInvite = async () => {
