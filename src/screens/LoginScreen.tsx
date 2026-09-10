@@ -52,7 +52,7 @@ export function LoginScreen({ navigation }: any) {
         setStep('password');
         setStatus('');
       } else {
-        navigation.navigate('Register', { email: email.trim().toLowerCase(), mode: 'create' });
+        navigation.navigate('Register', { email: email.trim().toLowerCase() });
       }
     } catch (e: any) {
       if (e.status === 404) {
@@ -241,6 +241,10 @@ export function LoginScreen({ navigation }: any) {
 
         <TouchableOpacity style={styles.registerBtn} onPress={() => navigation.navigate('Register', { email })}>
           <Text style={styles.registerBtnText}>Register your company</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.registerBtn} onPress={() => navigation.navigate('AcceptInvite')}>
+          <Text style={styles.registerBtnText}>Have an invitation code?</Text>
         </TouchableOpacity>
 
         {status ? <Text style={styles.status}>{status}</Text> : null}

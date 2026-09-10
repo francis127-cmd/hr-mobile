@@ -5,26 +5,36 @@ import { useAuth } from '../auth/AuthContext';
 
 export function AcceptInviteScreen({ navigation, route }: any) {
   const { loginWithPassword } = useAuth();
-  const token = route?.params?.token;
+  const routeToken = route?.params?.token;
+  const [tokenInput, setTokenInput] = useState(routeToken || '');
+  const [token, setToken] = useState<string | undefined>(routeToken);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validating, setValidating] = useState(true);
+  const [validating, setValidating] = useState(!!routeToken);
   const [inviteInfo, setInviteInfo] = useState<any>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (token) {
-      validateToken();
+    if (routeToken) {
+      validateToken(routeToken);
     } else {
-      setError('No invitation token provided');
       setValidating(false);
     }
-  }, [token]);
+  }, [routeToken]);
 
-  const validateToken = async () => {
+  const validateToken = async (t?: string) => {
+    const value = (t ?? tokenInput).trim();
+    if (!value) {
+      setError('Enter your invitation code');
+      setValidating(false);
+      return;
+    }
+    setError('');
+    setValidating(true);
     try {
-      const info = await api.validateInviteToken(token);
+      const info = await api.validateInviteToken(value);
+      setToken(value);
       setInviteInfo(info);
     } catch (e: any) {
       setError(e.message || 'Invalid invitation');
@@ -45,6 +55,7 @@ export function AcceptInviteScreen({ navigation, route }: any) {
 
     setLoading(true);
     try {
+      if (!token) throw new Error('No invitation code validated yet');
       await api.acceptInvite(token, password);
       loginWithPassword();
     } catch (e: any) {
@@ -72,6 +83,38 @@ export function AcceptInviteScreen({ navigation, route }: any) {
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>
       </View>
+    );
+  }
+
+  if (!token || !inviteInfo) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Accept Invitation</Text>
+          <Text style={styles.subtitle}>Enter the invitation code your company admin shared with you.</Text>
+
+          <Text style={styles.label}>Invitation Code *</Text>
+          <TextInput
+            style={styles.input}
+            value={tokenInput}
+            onChangeText={setTokenInput}
+            placeholder="Paste your invitation code"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+          />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <TouchableOpacity style={[styles.acceptBtn, validating && styles.acceptBtnDisabled]} onPress={() => validateToken()} disabled={validating}>
+            {validating ? <ActivityIndicator color="#fff" /> : <Text style={styles.acceptBtnText}>Validate Code</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.backBtnText}>Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     );
   }
 

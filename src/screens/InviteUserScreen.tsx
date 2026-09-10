@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Share } from 'react-native';
 import { api } from '../api/requests';
 
 export function InviteUserScreen({ navigation }: any) {
@@ -9,6 +9,7 @@ export function InviteUserScreen({ navigation }: any) {
   const [departmentRole, setDepartmentRole] = useState('AGENT');
   const [departments, setDepartments] = useState<{ id: string; code: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [createdToken, setCreatedToken] = useState<string | null>(null);
 
   useEffect(() => {
     api.adminListDepartments()
@@ -22,16 +23,15 @@ export function InviteUserScreen({ navigation }: any) {
       return;
     }
     setLoading(true);
+    setCreatedToken(null);
     try {
-      await api.adminInviteUser({
+      const invite = await api.adminInviteUser({
         email: email.toLowerCase().trim(),
         platformRole,
         departmentCode: departmentCode || undefined,
         departmentRole: departmentCode ? departmentRole : undefined,
       });
-      Alert.alert('Success', `Invite created for ${email}. They can sign in with Google.`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      setCreatedToken(invite.token);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to create invitation');
     } finally {
@@ -39,10 +39,19 @@ export function InviteUserScreen({ navigation }: any) {
     }
   };
 
+  const handleShare = async () => {
+    if (!createdToken) return;
+    try {
+      await Share.share({
+        message: `You've been invited to join ${email} on Internal Operations Hub. Open the app, tap "Have an invitation code?" on the login screen, and enter this code:\n\n${createdToken}`,
+      });
+    } catch {}
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Invite User</Text>
-      <Text style={styles.subtitle}>An invitation will be created. User signs in with Google to activate.</Text>
+      <Text style={styles.subtitle}>Only invited users can join. Share the invitation code with them after creating it.</Text>
 
       <Text style={styles.label}>Email *</Text>
       <TextInput
@@ -106,6 +115,20 @@ export function InviteUserScreen({ navigation }: any) {
       <TouchableOpacity style={styles.btn} onPress={handleInvite} disabled={loading}>
         <Text style={styles.btnText}>{loading ? 'Creating...' : 'Create Invitation'}</Text>
       </TouchableOpacity>
+
+      {createdToken && (
+        <View style={styles.tokenBox}>
+          <Text style={styles.tokenTitle}>Invitation created for {email}</Text>
+          <Text style={styles.tokenLabel}>Share this code with them. They enter it via "Have an invitation code?" on the login screen, then set their password. Valid for 7 days.</Text>
+          <Text style={styles.tokenValue} selectable>{createdToken}</Text>
+          <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+            <Text style={styles.shareBtnText}>Share Code</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.doneBtnText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -128,4 +151,12 @@ const styles = StyleSheet.create({
   roleTextActive: { color: '#fff' },
   btn: { backgroundColor: '#2563eb', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 24 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  tokenBox: { backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe', borderRadius: 10, padding: 16, marginTop: 24 },
+  tokenTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
+  tokenLabel: { fontSize: 13, color: '#475569', marginBottom: 10, lineHeight: 19 },
+  tokenValue: { fontSize: 13, fontWeight: '700', color: '#1d4ed8', backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12 },
+  shareBtn: { backgroundColor: '#2563eb', borderRadius: 10, padding: 14, alignItems: 'center' },
+  shareBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  doneBtn: { marginTop: 12, alignItems: 'center' },
+  doneBtnText: { fontSize: 14, color: '#6366f1', fontWeight: '600' },
 });

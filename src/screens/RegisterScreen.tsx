@@ -12,6 +12,7 @@ export function RegisterScreen({ navigation, route }: any) {
   const [displayName, setDisplayName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companySlug, setCompanySlug] = useState('');
+  const [inviteToken, setInviteToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'join' | 'create'>(route?.params?.mode === 'create' ? 'create' : 'join');
 
@@ -50,8 +51,8 @@ export function RegisterScreen({ navigation, route }: any) {
       }
     }
     if (mode === 'join') {
-      if (!companySlug.trim()) {
-        Alert.alert('Error', 'Enter your company slug (ask your admin)');
+      if (!inviteToken.trim()) {
+        Alert.alert('Error', 'Enter your invitation code (ask your admin)');
         return;
       }
     }
@@ -70,12 +71,7 @@ export function RegisterScreen({ navigation, route }: any) {
         await api.loginPassword(email.trim().toLowerCase(), password);
         loginWithPassword();
       } else {
-        await api.registerPassword({
-          email: email.trim().toLowerCase(),
-          password,
-          displayName: displayName.trim() || undefined,
-          companySlug: companySlug.trim().toLowerCase() || undefined,
-        });
+        await api.acceptInvite(inviteToken.trim(), password);
         loginWithPassword();
       }
     } catch (e: any) {
@@ -108,7 +104,7 @@ export function RegisterScreen({ navigation, route }: any) {
         </View>
 
         {mode === 'join' ? (
-          <Text style={styles.hint}>Enter your company slug to join an existing company.</Text>
+          <Text style={styles.hint}>You can only join with an invitation from your company admin.</Text>
         ) : (
           <Text style={styles.hint}>Register a new company. You'll be the admin.</Text>
         )}
@@ -153,16 +149,16 @@ export function RegisterScreen({ navigation, route }: any) {
 
         {mode === 'join' && (
           <>
-            <Text style={styles.label}>Company Slug *</Text>
+            <Text style={styles.label}>Invitation Code *</Text>
             <TextInput
               style={styles.input}
-              value={companySlug}
-              onChangeText={setCompanySlug}
-              placeholder="Ask your admin for the slug"
+              value={inviteToken}
+              onChangeText={setInviteToken}
+              placeholder="Paste the code your admin shared"
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Text style={styles.hint}>The unique identifier for your company (e.g. acme-corp)</Text>
+            <Text style={styles.hint}>Your admin creates this in Admin → Invite User and shares it with you.</Text>
           </>
         )}
 

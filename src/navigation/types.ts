@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 export type RootStackParamList = {
   Login: undefined;
-  Register: { email?: string } | undefined;
+  Register: { email?: string; mode?: string } | undefined;
   AcceptInvite: { token: string } | undefined;
   CompanySetup: undefined;
   Main: undefined;

@@ -44,16 +44,6 @@ export const api = {
     return res;
   },
 
-  async registerPassword(dto: { email: string; password: string; displayName?: string; companyName?: string; companySlug?: string }): Promise<{ accessToken: string; refreshToken?: string; newCompany: boolean }> {
-    const res = await apiRequest<{ accessToken: string; refreshToken?: string; newCompany: boolean }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(dto),
-    });
-    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
-    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, res.newCompany || false, res.refreshToken);
-    return res;
-  },
-
   async acceptInvite(token: string, password: string): Promise<{ accessToken: string; refreshToken?: string }> {
     const res = await apiRequest<{ accessToken: string; refreshToken?: string }>('/auth/accept-invite', {
       method: 'POST',
