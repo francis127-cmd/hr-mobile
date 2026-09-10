@@ -1,8 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../auth/AuthContext';
 
 export function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const { user, memberships, logout } = useAuth();
 
   return (
@@ -27,6 +30,14 @@ export function ProfileScreen() {
         </View>
       )}
 
+      <TouchableOpacity
+        style={styles.securityBtn}
+        onPress={() => navigation.navigate('MfaSettings')}
+      >
+        <Ionicons name="shield-checkmark-outline" size={20} color="#2563eb" style={{ marginRight: 10 }} />
+        <Text style={styles.securityBtnText}>Two-Factor Authentication (MFA)</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
@@ -48,4 +59,6 @@ const styles = StyleSheet.create({
   deptRole: { fontSize: 12, color: '#64748b', fontWeight: '600' },
   logoutBtn: { backgroundColor: '#fee2e2', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 20 },
   logoutText: { color: '#dc2626', fontWeight: '700', fontSize: 16 },
+  securityBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', borderRadius: 10, padding: 16, marginTop: 4, borderWidth: 1, borderColor: '#bfdbfe' },
+  securityBtnText: { color: '#1d4ed8', fontWeight: '700', fontSize: 15 },
 });
