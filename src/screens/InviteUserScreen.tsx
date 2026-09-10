@@ -12,6 +12,7 @@ export function InviteUserScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailReason, setEmailReason] = useState<string | null>(null);
 
   useEffect(() => {
     api.adminListDepartments()
@@ -36,6 +37,7 @@ export function InviteUserScreen({ navigation }: any) {
       });
       setCreatedToken(invite.token);
       setEmailSent(!!invite.emailSent);
+      setEmailReason(invite.emailReason || null);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to create invitation');
     } finally {
@@ -125,8 +127,10 @@ export function InviteUserScreen({ navigation }: any) {
           <Text style={styles.tokenTitle}>Invitation created for {email}</Text>
           {emailSent ? (
             <Text style={styles.tokenLabel}>Invitation email sent to {email}. If they don't see it, share the code below — they enter it via "Have an invitation code?" on the login screen. Valid for 7 days.</Text>
+          ) : emailReason === 'disabled' ? (
+            <Text style={styles.tokenLabel}>Email delivery is not configured on the server. Share this code with them. They enter it via "Have an invitation code?" on the login screen, then set their password. Valid for 7 days.</Text>
           ) : (
-            <Text style={styles.tokenLabel}>Email delivery is not configured. Share this code with them. They enter it via "Have an invitation code?" on the login screen, then set their password. Valid for 7 days.</Text>
+            <Text style={styles.tokenLabel}>The email couldn't be sent (Gmail {emailReason === 'timeout' ? 'timed out' : 'rejected it'} — check the server's SMTP password). Share the code below instead. They enter it via "Have an invitation code?" on the login screen. Valid for 7 days.</Text>
           )}
           <Text style={styles.tokenValue} selectable>{createdToken}</Text>
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
