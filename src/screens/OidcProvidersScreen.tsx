@@ -58,7 +58,7 @@ export function OidcProvidersScreen({ navigation }: any) {
         clientId: clientId.trim(),
         clientSecret: clientSecret.trim(),
         discoveryUrl: discoveryUrl.trim() || `${issuer.trim()}/.well-known/openid-configuration`,
-        redirectUri: redirectUri.trim() || 'https://euriskoproject.onrender.com/auth/oidc/callback',
+        redirectUri: redirectUri.trim() || 'eurisko-hub://oidc-callback',
         scopes: scopes.trim() || 'openid email profile',
       });
       setShowAdd(false);
@@ -140,7 +140,8 @@ export function OidcProvidersScreen({ navigation }: any) {
           <AppTextInput style={styles.input} value={clientSecret} onChangeText={setClientSecret} placeholder="your-client-secret" secureTextEntry autoCapitalize="none" />
 
           <Text style={styles.label}>Redirect URI</Text>
-          <AppTextInput style={styles.input} value={redirectUri} onChangeText={setRedirectUri} placeholder="https://euriskoproject.onrender.com/auth/oidc/callback" autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={redirectUri} onChangeText={setRedirectUri} placeholder="eurisko-hub://oidc-callback" autoCapitalize="none" />
+          <Text style={styles.hint}>Register this exact URI in your identity provider. Mobile login uses the app scheme: eurisko-hub://oidc-callback</Text>
 
           <Text style={styles.label}>Scopes</Text>
           <AppTextInput style={styles.input} value={scopes} onChangeText={setScopes} placeholder="openid email profile" autoCapitalize="none" />
@@ -215,6 +216,7 @@ const styles = StyleSheet.create({
   addForm: { backgroundColor: '#fff', borderRadius: 12, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#e2e8f0' },
   label: { fontSize: 13, fontWeight: '600', color: '#334155', marginBottom: 4, marginTop: 10 },
   input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, fontSize: 14 },
+  hint: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
   saveBtn: { backgroundColor: '#2563eb', borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 16 },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },

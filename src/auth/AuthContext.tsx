@@ -22,6 +22,7 @@ interface AuthCtx {
   mfaRequired: boolean;
   mfaToken: string | null;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithOidc: (tokens: { companySlug: string; providerName: string; code: string; codeVerifier: string; state: string }) => Promise<void>;
   loginWithPassword: () => void;
   completeSetup: (companyName: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthCtx>({
   mfaRequired: false,
   mfaToken: null,
   loginWithGoogle: async () => {},
+  loginWithOidc: async () => {},
   loginWithPassword: () => {},
   completeSetup: async () => {},
   logout: async () => {},
@@ -107,6 +109,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     setNewCompany(result.newCompany);
     await authStore.set({ newCompany: result.newCompany });
+    try {
+      const m = await api.myMemberships();
+      setMemberships(m as any);
+    } catch {}
+  }, []);
+
+  const loginWithOidc = useCallback(async (tokens: { companySlug: string; providerName: string; code: string; codeVerifier: string; state: string }) => {
+    await api.oidcCallback(tokens);
+    const s = authStore.get();
+    setUser({
+      ssoSubject: s.ssoSubject,
+      userId: s.userId,
+      displayName: s.displayName,
+      email: s.email,
+      role: s.role,
+      apiBase: s.apiBase,
+      companyId: s.companyId || '',
+    });
+    setNewCompany(false);
+    await authStore.set({ newCompany: false });
     try {
       const m = await api.myMemberships();
       setMemberships(m as any);
@@ -202,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         mfaRequired,
         mfaToken,
         loginWithGoogle,
+        loginWithOidc,
         loginWithPassword,
         completeSetup,
         logout,

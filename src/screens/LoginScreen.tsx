@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvo
 import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
 import { AppTextInput } from '../components/AppTextInput';
+import * as WebBrowser from 'expo-web-browser';
 
 let GoogleSignin: any = null;
 let nativeGoogleAvailable = false;
@@ -22,7 +23,7 @@ try {
 }
 
 export function LoginScreen({ navigation }: any) {
-  const { loginWithGoogle, loginWithPassword, handleMfaChallenge } = useAuth();
+  const { loginWithGoogle, loginWithOidc, loginWithPassword, handleMfaChallenge } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
@@ -30,6 +31,16 @@ export function LoginScreen({ navigation }: any) {
   const [discoverResult, setDiscoverResult] = useState<any>(null);
   const [mfaToken, setMfaToken] = useState<string>('');
   const [mfaCode, setMfaCode] = useState('');
+  const [oidcProviders, setOidcProviders] = useState<any[]>([]);
+
+  const loadOidcProviders = async (companySlug: string) => {
+    try {
+      const result = await api.oidcDiscoverProviders(companySlug);
+      setOidcProviders(result.providers || []);
+    } catch {
+      setOidcProviders([]);
+    }
+  };
 
   const handleDiscover = async () => {
     if (!email.trim()) return;
@@ -48,7 +59,12 @@ export function LoginScreen({ navigation }: any) {
         }
         setStep('sso');
         setStatus(`Signing in to ${result.companyName} via Google...`);
+        if (result.companySlug) void loadOidcProviders(result.companySlug);
         handleGoogleSignIn();
+      } else if (result.authMode === 'OIDC') {
+        setStep('sso');
+        setStatus('');
+        if (result.companySlug) await loadOidcProviders(result.companySlug);
       } else if (result.authMode === 'PASSWORD') {
         setStep('password');
         setStatus('');
@@ -87,6 +103,41 @@ export function LoginScreen({ navigation }: any) {
       }
     } catch (e: any) {
       setStatus(e.message || 'Google sign-in failed');
+    }
+  };
+
+  const handleOidcSignIn = async (provider: any) => {
+    const companySlug = discoverResult?.companySlug;
+    if (!companySlug) {
+      setStatus('Company not resolved');
+      return;
+    }
+    setLoading(true);
+    setStatus('');
+    try {
+      const redirectUri = 'eurisko-hub://oidc-callback';
+      const { authorizationUrl, state, codeVerifier } = await api.oidcInitiateLogin(
+        companySlug,
+        provider.name,
+        redirectUri,
+      );
+      const result = await WebBrowser.openAuthSessionAsync(authorizationUrl, redirectUri);
+      if (result.type !== 'success' || !result.url) {
+        setStatus('Sign-in cancelled');
+        return;
+      }
+      const params = new URL(result.url).searchParams;
+      const code = params.get('code');
+      const returnedState = params.get('state');
+      if (!code || !returnedState) {
+        setStatus('Sign-in failed: no authorization code returned');
+        return;
+      }
+      await loginWithOidc({ companySlug, providerName: provider.name, code, codeVerifier, state: returnedState });
+    } catch (e: any) {
+      setStatus(e.message || 'Sign-in with provider failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,6 +180,7 @@ export function LoginScreen({ navigation }: any) {
   const handleBack = () => {
     setStep('email');
     setDiscoverResult(null);
+    setOidcProviders([]);
     setStatus('');
     setMfaToken('');
     setMfaCode('');
@@ -203,6 +255,17 @@ export function LoginScreen({ navigation }: any) {
           >
             {loading ? <ActivityIndicator color="#333" /> : <Text style={styles.googleBtnText}>G  Sign in with Google</Text>}
           </TouchableOpacity>
+
+          {oidcProviders.map((provider) => (
+            <TouchableOpacity
+              key={provider.name}
+              style={[styles.googleBtn, styles.oidcBtn, loading && styles.buttonDisabled]}
+              onPress={() => handleOidcSignIn(provider)}
+              disabled={loading}
+            >
+              <Text style={styles.googleBtnText}>Continue with {provider.name}</Text>
+            </TouchableOpacity>
+          ))}
 
           <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
             <Text style={styles.backBtnText}>Use a different email</Text>
@@ -332,6 +395,7 @@ const styles = StyleSheet.create({
   mfaInput: { borderWidth: 2, borderColor: '#2563eb', borderRadius: 12, padding: 18, fontSize: 28, textAlign: 'center', marginBottom: 20, fontWeight: '700', letterSpacing: 8, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   googleBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 16, alignItems: 'center' },
   googleBtnText: { fontSize: 16, fontWeight: '600', color: '#333' },
+  oidcBtn: { marginTop: 12 },
   continueBtn: { backgroundColor: '#2563eb', borderRadius: 10, padding: 16, alignItems: 'center' },
   continueBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   backBtn: { marginTop: 16, alignItems: 'center' },

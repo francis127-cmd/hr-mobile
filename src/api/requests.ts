@@ -248,4 +248,22 @@ export const api = {
   oidcDiscoverProviders(companySlug: string): Promise<{ providers: any[] }> {
     return apiRequest(`/oidc/discover/${companySlug}`);
   },
+
+  async oidcInitiateLogin(companySlug: string, providerName: string, redirectUri: string): Promise<{ authorizationUrl: string; state: string; codeVerifier: string }> {
+    return apiRequest<{ authorizationUrl: string; state: string; codeVerifier: string }>('/oidc/authorize', {
+      method: 'POST',
+      body: JSON.stringify({ companySlug, providerName, redirectUri }),
+    });
+  },
+
+  async oidcCallback(dto: { companySlug: string; providerName: string; code: string; codeVerifier: string; state: string }): Promise<{ isNewUser: boolean }> {
+    authStore.set({ ssoSubject: '', token: '' });
+    const res = await apiRequest<{ accessToken: string; refreshToken?: string; isNewUser: boolean }>('/oidc/callback', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+    const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
+    authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false, res.refreshToken);
+    return { isNewUser: res.isNewUser || false };
+  },
 };
