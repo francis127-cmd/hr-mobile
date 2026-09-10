@@ -66,6 +66,7 @@ export interface HrRequest {
   priority: Priority;
   status: RequestStatus;
   claimedBy: string | null;
+  agent?: { id: string; displayName: string; email: string } | null;
   resolutionNote: string | null;
   rejectionReason: string | null;
   completedAt: string | null;

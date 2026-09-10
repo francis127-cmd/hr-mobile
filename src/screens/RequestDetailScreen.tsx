@@ -27,7 +27,7 @@ import {
 } from '../types';
 import { Badge } from '../components/Badge';
 import { Loading } from '../components/Feedback';
-import { useAuth, isDeptMember } from '../auth/AuthContext';
+import { useAuth, isDeptMember, isDeptManager } from '../auth/AuthContext';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RequestDetail'>;
@@ -58,8 +58,14 @@ export function RequestDetailScreen({ route, navigation }: Props) {
   React.useEffect(() => { load(); }, [load]);
 
   const isStaff = isDeptMember(memberships, request?.departmentId || '') || user?.role === 'SYSTEM_ADMIN';
+  const isManager = isDeptManager(memberships, request?.departmentId || '') || user?.role === 'SYSTEM_ADMIN';
   const isClaimant = request?.claimedBy === user?.userId;
   const owns = request?.employeeId === user?.userId;
+  const isTerminal = request?.status === RequestStatus.COMPLETED || request?.status === RequestStatus.REJECTED;
+  // Mirrors server document rules: claimant / manager / admin manage files;
+  // the employee may download their own resolution once terminal.
+  const canManageDocs = isClaimant || isManager;
+  const canDownloadDoc = canManageDocs || (owns && isTerminal);
 
   const handleClaim = async () => {
     if (!request) return;
@@ -211,7 +217,9 @@ export function RequestDetailScreen({ route, navigation }: Props) {
         {request.description ? <Text style={styles.desc}>{request.description}</Text> : null}
 
         {request.claimedBy && (
-          <Text style={styles.meta}>Claimed by: {request.claimedBy === user?.ssoSubject ? 'You' : request.claimedBy}</Text>
+          <Text style={styles.meta}>
+            Claimed by: {request.claimedBy === user?.userId ? 'You' : request.agent?.displayName || 'A department agent'}
+          </Text>
         )}
 
         {request.resolutionNote && (
@@ -233,10 +241,12 @@ export function RequestDetailScreen({ route, navigation }: Props) {
           {request.documents && request.documents.length > 0 ? (
             request.documents.map((doc) => (
               <View key={doc.id} style={styles.docRow}>
-                <TouchableOpacity style={styles.linkBtn} onPress={handleDownload}>
-                  <Text style={styles.linkText}>Download {doc.originalFilename}</Text>
-                </TouchableOpacity>
-                {isStaff && (
+                {canDownloadDoc && (
+                  <TouchableOpacity style={styles.linkBtn} onPress={handleDownload}>
+                    <Text style={styles.linkText}>Download {doc.originalFilename}</Text>
+                  </TouchableOpacity>
+                )}
+                {canManageDocs && (
                   <TouchableOpacity style={styles.linkBtn} onPress={handleDeleteDoc}>
                     <Text style={[styles.linkText, { color: '#dc2626' }]}>Delete</Text>
                   </TouchableOpacity>
@@ -244,7 +254,7 @@ export function RequestDetailScreen({ route, navigation }: Props) {
               </View>
             ))
           ) : null}
-          {isStaff && request.claimedBy && (
+          {canManageDocs && request.claimedBy && (
             <TouchableOpacity style={styles.linkBtn} onPress={handleUpload}>
               <Text style={styles.linkText}>{request.documents?.length ? 'Replace document' : 'Attach document'}</Text>
             </TouchableOpacity>
