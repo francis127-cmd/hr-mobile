@@ -106,6 +106,58 @@ export function LoginScreen({ navigation }: any) {
     }
   };
 
+  const handleUpfrontGoogleSignIn = async () => {
+    if (!nativeGoogleAvailable || !GoogleSignin) {
+      Alert.alert(
+        'Native Google Sign-In',
+        'Google Play Services native sign-in requires an EAS development build.',
+        [{ text: 'OK' }],
+      );
+      return;
+    }
+    setLoading(true);
+    setStatus('');
+    try {
+      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      if (!tokens.idToken) {
+        setStatus('Google sign-in failed');
+        return;
+      }
+      // Route by company like the email flow: SSO companies sign straight
+      // in, PASSWORD companies land on the password step, unknown emails
+      // go to registration.
+      const idPayload = JSON.parse(atob(tokens.idToken.split('.')[1]));
+      const googleEmail = String(idPayload.email || '').toLowerCase();
+      if (!googleEmail) {
+        setStatus('Google sign-in failed');
+        return;
+      }
+      setEmail(googleEmail);
+      const result = await api.discover(googleEmail);
+      setDiscoverResult(result);
+      if (result.authMode === 'SSO') {
+        if (result.googleClientId) {
+          GoogleSignin.configure({ webClientId: result.googleClientId, scopes: ['profile', 'email'] });
+        }
+        await loginWithGoogle(tokens.idToken);
+      } else if (result.authMode === 'PASSWORD' || result.authMode === 'OIDC') {
+        setStep(result.authMode === 'OIDC' ? 'sso' : 'password');
+        if (result.authMode === 'OIDC' && result.companySlug) {
+          await loadOidcProviders(result.companySlug);
+        }
+        setStatus('');
+      } else {
+        navigation.navigate('Register', { email: googleEmail });
+      }
+    } catch (e: any) {
+      setStatus(e.message || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOidcSignIn = async (provider: any) => {
     const companySlug = discoverResult?.companySlug;
     if (!companySlug) {
@@ -282,7 +334,7 @@ export function LoginScreen({ navigation }: any) {
       <View style={styles.card}>
         <Text style={styles.title}>Internal Operations Hub</Text>
         <Text style={styles.subtitle}>Enter your work email to sign in</Text>
-        <Text style={styles.ssoHint}>SSO users: just enter your work email — we'll route you to your company's sign-in.</Text>
+        <Text style={styles.ssoHint}>Enter your work email and we'll route you to your company's sign-in — or continue with Google below.</Text>
 
         <Text style={styles.label}>Work Email</Text>
         <AppTextInput
@@ -301,6 +353,20 @@ export function LoginScreen({ navigation }: any) {
           disabled={loading}
         >
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Continue</Text>}
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 16 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+          <Text style={{ marginHorizontal: 12, color: '#94a3b8', fontSize: 13 }}>or</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+        </View>
+
+        <TouchableOpacity
+          style={[styles.googleBtn, loading && styles.buttonDisabled]}
+          onPress={handleUpfrontGoogleSignIn}
+          disabled={loading}
+        >
+          <Text style={styles.googleBtnText}>G  Continue with Google</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.registerBtn} onPress={() => navigation.navigate('Register', { email })}>
