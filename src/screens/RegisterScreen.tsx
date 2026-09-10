@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
+import { AppTextInput } from '../components/AppTextInput';
 
 export function RegisterScreen({ navigation, route }: any) {
   const { loginWithPassword } = useAuth();
@@ -71,7 +72,7 @@ export function RegisterScreen({ navigation, route }: any) {
         await api.loginPassword(email.trim().toLowerCase(), password);
         loginWithPassword();
       } else {
-        await api.acceptInvite(inviteToken.trim(), password);
+        await api.acceptInvite(inviteToken.trim(), password, displayName.trim() || undefined);
         loginWithPassword();
       }
     } catch (e: any) {
@@ -110,7 +111,7 @@ export function RegisterScreen({ navigation, route }: any) {
         )}
 
         <Text style={styles.label}>Email *</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={email}
           onChangeText={setEmail}
@@ -121,7 +122,7 @@ export function RegisterScreen({ navigation, route }: any) {
         />
 
         <Text style={styles.label}>Password *</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={password}
           onChangeText={setPassword}
@@ -130,7 +131,7 @@ export function RegisterScreen({ navigation, route }: any) {
         />
 
         <Text style={styles.label}>Confirm Password *</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -139,7 +140,7 @@ export function RegisterScreen({ navigation, route }: any) {
         />
 
         <Text style={styles.label}>Display Name</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={displayName}
           onChangeText={setDisplayName}
@@ -150,7 +151,7 @@ export function RegisterScreen({ navigation, route }: any) {
         {mode === 'join' && (
           <>
             <Text style={styles.label}>Invitation Code *</Text>
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={inviteToken}
               onChangeText={setInviteToken}
@@ -165,7 +166,7 @@ export function RegisterScreen({ navigation, route }: any) {
         {mode === 'create' && (
           <>
             <Text style={styles.label}>Company Name *</Text>
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={companyName}
               onChangeText={handleCompanyNameChange}
@@ -174,7 +175,7 @@ export function RegisterScreen({ navigation, route }: any) {
             />
 
             <Text style={styles.label}>Company Slug *</Text>
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={companySlug}
               onChangeText={setCompanySlug}

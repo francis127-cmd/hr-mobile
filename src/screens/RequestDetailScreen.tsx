@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -262,7 +263,7 @@ export function RequestDetailScreen({ route, navigation }: Props) {
             {!showReject ? (
               <>
                 <Text style={styles.label}>Resolution note</Text>
-                <TextInput
+                <AppTextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Describe the resolution..."
                   value={resolutionNote}
@@ -279,7 +280,7 @@ export function RequestDetailScreen({ route, navigation }: Props) {
             ) : (
               <>
                 <Text style={styles.label}>Rejection reason *</Text>
-                <TextInput
+                <AppTextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Explain why this request is rejected..."
                   value={rejectionReason}

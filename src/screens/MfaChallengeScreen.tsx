@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { useAuth } from '../auth/AuthContext';
 
 export function MfaChallengeScreen({ navigation }: any) {
@@ -35,7 +36,7 @@ export function MfaChallengeScreen({ navigation }: any) {
         <Text style={styles.title}>Two-Factor Verification</Text>
         <Text style={styles.subtitle}>Enter the 6-digit code from your authenticator app</Text>
 
-        <TextInput
+        <AppTextInput
           style={styles.codeInput}
           value={code}
           onChangeText={setCode}

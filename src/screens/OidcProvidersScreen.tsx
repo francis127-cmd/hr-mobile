@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, FlatList } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { api } from '../api/requests';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -124,25 +125,25 @@ export function OidcProvidersScreen({ navigation }: any) {
       {showAdd && (
         <View style={styles.addForm}>
           <Text style={styles.label}>Provider Name *</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Okta, Azure AD, etc." />
+          <AppTextInput style={styles.input} value={name} onChangeText={setName} placeholder="Okta, Azure AD, etc." />
 
           <Text style={styles.label}>Issuer URL *</Text>
-          <TextInput style={styles.input} value={issuer} onChangeText={setIssuer} placeholder="https://your-idp.com" autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={issuer} onChangeText={setIssuer} placeholder="https://your-idp.com" autoCapitalize="none" />
 
           <Text style={styles.label}>Discovery URL</Text>
-          <TextInput style={styles.input} value={discoveryUrl} onChangeText={setDiscoveryUrl} placeholder="Auto-generated from issuer" autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={discoveryUrl} onChangeText={setDiscoveryUrl} placeholder="Auto-generated from issuer" autoCapitalize="none" />
 
           <Text style={styles.label}>Client ID *</Text>
-          <TextInput style={styles.input} value={clientId} onChangeText={setClientId} placeholder="your-client-id" autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={clientId} onChangeText={setClientId} placeholder="your-client-id" autoCapitalize="none" />
 
           <Text style={styles.label}>Client Secret *</Text>
-          <TextInput style={styles.input} value={clientSecret} onChangeText={setClientSecret} placeholder="your-client-secret" secureTextEntry autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={clientSecret} onChangeText={setClientSecret} placeholder="your-client-secret" secureTextEntry autoCapitalize="none" />
 
           <Text style={styles.label}>Redirect URI</Text>
-          <TextInput style={styles.input} value={redirectUri} onChangeText={setRedirectUri} placeholder="https://euriskoproject.onrender.com/auth/oidc/callback" autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={redirectUri} onChangeText={setRedirectUri} placeholder="https://euriskoproject.onrender.com/auth/oidc/callback" autoCapitalize="none" />
 
           <Text style={styles.label}>Scopes</Text>
-          <TextInput style={styles.input} value={scopes} onChangeText={setScopes} placeholder="openid email profile" autoCapitalize="none" />
+          <AppTextInput style={styles.input} value={scopes} onChangeText={setScopes} placeholder="openid email profile" autoCapitalize="none" />
 
           <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleAdd} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Create Provider</Text>}

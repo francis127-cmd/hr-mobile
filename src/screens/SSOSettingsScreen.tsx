@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Switch } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { api } from '../api/requests';
 
 export function SSOSettingsScreen({ navigation }: any) {
@@ -68,10 +69,10 @@ export function SSOSettingsScreen({ navigation }: any) {
       <Text style={styles.subtitle}>Configure authentication, SSO, and security policies.</Text>
 
       <Text style={styles.label}>Company Name</Text>
-      <TextInput style={[styles.input, styles.inputDisabled]} value={companyName} editable={false} />
+      <AppTextInput style={[styles.input, styles.inputDisabled]} value={companyName} editable={false} />
 
       <Text style={styles.label}>Company Slug</Text>
-      <TextInput style={[styles.input, styles.inputDisabled]} value={companySlug} editable={false} />
+      <AppTextInput style={[styles.input, styles.inputDisabled]} value={companySlug} editable={false} />
 
       {/* Auth Mode Toggle */}
       <Text style={styles.label}>Authentication Mode</Text>
@@ -99,7 +100,7 @@ export function SSOSettingsScreen({ navigation }: any) {
       {authMode === 'SSO' && (
         <>
           <Text style={styles.label}>Company Domain</Text>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={domain}
             onChangeText={setDomain}
@@ -110,7 +111,7 @@ export function SSOSettingsScreen({ navigation }: any) {
           <Text style={styles.hint}>Users with emails @company.com will be routed to Google SSO</Text>
 
           <Text style={styles.label}>Google OAuth Client ID</Text>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={googleClientId}
             onChangeText={setGoogleClientId}
@@ -145,7 +146,7 @@ export function SSOSettingsScreen({ navigation }: any) {
           <Text style={styles.settingLabel}>Refresh Token Expiry</Text>
           <Text style={styles.settingHint}>Days before refresh token expires (1-90)</Text>
         </View>
-        <TextInput
+        <AppTextInput
           style={styles.smallInput}
           value={refreshTokenExpiryDays}
           onChangeText={setRefreshTokenExpiryDays}

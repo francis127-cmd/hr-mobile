@@ -15,6 +15,7 @@ import { api } from '../api/requests';
 import { ApiError } from '../api/client';
 import { Department, PRIORITY_OPTIONS, PRIORITY_LABELS } from '../types';
 import { PickerField } from '../components/PickerField';
+import { AppTextInput } from '../components/AppTextInput';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRequest'>;
@@ -100,7 +101,7 @@ export function CreateRequestScreen({ route, navigation }: Props) {
         )}
 
         <Text style={styles.label}>Title *</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           placeholder="Brief description of your request"
           value={title}
@@ -108,7 +109,7 @@ export function CreateRequestScreen({ route, navigation }: Props) {
         />
 
         <Text style={styles.label}>Description</Text>
-        <TextInput
+        <AppTextInput
           style={[styles.input, styles.textArea]}
           placeholder="Additional details (optional)"
           value={description}

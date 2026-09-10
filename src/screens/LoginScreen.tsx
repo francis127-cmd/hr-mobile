@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
+import { AppTextInput } from '../components/AppTextInput';
 
 let GoogleSignin: any = null;
 let nativeGoogleAvailable = false;
@@ -143,7 +144,7 @@ export function LoginScreen({ navigation }: any) {
           <Text style={styles.email}>{email}</Text>
 
           <Text style={styles.label}>MFA Code</Text>
-          <TextInput
+          <AppTextInput
             style={styles.mfaInput}
             value={mfaCode}
             onChangeText={setMfaCode}
@@ -221,7 +222,7 @@ export function LoginScreen({ navigation }: any) {
         <Text style={styles.ssoHint}>SSO users: just enter your work email — we'll route you to your company's sign-in.</Text>
 
         <Text style={styles.label}>Work Email</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={email}
           onChangeText={setEmail}
@@ -274,7 +275,7 @@ function PasswordStep({ email, companyName, onLogin, onBack, onSso, hasSso, load
         <Text style={styles.email}>{email}</Text>
 
         <Text style={styles.label}>Password</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={password}
           onChangeText={setPassword}

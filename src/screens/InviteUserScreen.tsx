@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Share } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { api } from '../api/requests';
 
 export function InviteUserScreen({ navigation }: any) {
@@ -10,6 +11,7 @@ export function InviteUserScreen({ navigation }: any) {
   const [departments, setDepartments] = useState<{ id: string; code: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     api.adminListDepartments()
@@ -24,6 +26,7 @@ export function InviteUserScreen({ navigation }: any) {
     }
     setLoading(true);
     setCreatedToken(null);
+    setEmailSent(false);
     try {
       const invite = await api.adminInviteUser({
         email: email.toLowerCase().trim(),
@@ -32,6 +35,7 @@ export function InviteUserScreen({ navigation }: any) {
         departmentRole: departmentCode ? departmentRole : undefined,
       });
       setCreatedToken(invite.token);
+      setEmailSent(!!invite.emailSent);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to create invitation');
     } finally {
@@ -54,7 +58,7 @@ export function InviteUserScreen({ navigation }: any) {
       <Text style={styles.subtitle}>Only invited users can join. Share the invitation code with them after creating it.</Text>
 
       <Text style={styles.label}>Email *</Text>
-      <TextInput
+      <AppTextInput
         style={styles.input}
         value={email}
         onChangeText={setEmail}
@@ -119,7 +123,11 @@ export function InviteUserScreen({ navigation }: any) {
       {createdToken && (
         <View style={styles.tokenBox}>
           <Text style={styles.tokenTitle}>Invitation created for {email}</Text>
-          <Text style={styles.tokenLabel}>Share this code with them. They enter it via "Have an invitation code?" on the login screen, then set their password. Valid for 7 days.</Text>
+          {emailSent ? (
+            <Text style={styles.tokenLabel}>Invitation email sent to {email}. If they don't see it, share the code below — they enter it via "Have an invitation code?" on the login screen. Valid for 7 days.</Text>
+          ) : (
+            <Text style={styles.tokenLabel}>Email delivery is not configured. Share this code with them. They enter it via "Have an invitation code?" on the login screen, then set their password. Valid for 7 days.</Text>
+          )}
           <Text style={styles.tokenValue} selectable>{createdToken}</Text>
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
             <Text style={styles.shareBtnText}>Share Code</Text>

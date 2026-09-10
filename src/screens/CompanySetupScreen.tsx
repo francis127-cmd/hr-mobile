@@ -10,6 +10,7 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { useAuth } from '../auth/AuthContext';
 
 export function CompanySetupScreen() {
@@ -40,7 +41,7 @@ export function CompanySetupScreen() {
         <Text style={styles.subtitle}>Let's set up your company</Text>
 
         <Text style={styles.label}>Company Name</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={companyName}
           onChangeText={setCompanyName}

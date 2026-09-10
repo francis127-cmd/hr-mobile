@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
 
@@ -98,7 +99,7 @@ export function MfaSetupScreen({ navigation }: any) {
           <Text style={styles.title}>Verify Your Code</Text>
           <Text style={styles.subtitle}>Enter the 6-digit code from your authenticator app</Text>
 
-          <TextInput
+          <AppTextInput
             style={styles.codeInput}
             value={verifyCode}
             onChangeText={setVerifyCode}

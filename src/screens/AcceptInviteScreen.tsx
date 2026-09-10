@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { api } from '../api/requests';
 import { useAuth } from '../auth/AuthContext';
+import { AppTextInput } from '../components/AppTextInput';
 
 export function AcceptInviteScreen({ navigation, route }: any) {
   const { loginWithPassword } = useAuth();
   const routeToken = route?.params?.token;
   const [tokenInput, setTokenInput] = useState(routeToken || '');
   const [token, setToken] = useState<string | undefined>(routeToken);
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export function AcceptInviteScreen({ navigation, route }: any) {
     setLoading(true);
     try {
       if (!token) throw new Error('No invitation code validated yet');
-      await api.acceptInvite(token, password);
+      await api.acceptInvite(token, password, displayName.trim() || undefined);
       loginWithPassword();
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to accept invitation');
@@ -94,7 +96,7 @@ export function AcceptInviteScreen({ navigation, route }: any) {
           <Text style={styles.subtitle}>Enter the invitation code your company admin shared with you.</Text>
 
           <Text style={styles.label}>Invitation Code *</Text>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={tokenInput}
             onChangeText={setTokenInput}
@@ -137,8 +139,17 @@ export function AcceptInviteScreen({ navigation, route }: any) {
           )}
         </View>
 
+        <Text style={styles.label}>Display Name</Text>
+        <AppTextInput
+          style={styles.input}
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="Your name (optional)"
+          autoCapitalize="words"
+        />
+
         <Text style={styles.label}>Set Password *</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={password}
           onChangeText={setPassword}
@@ -148,7 +159,7 @@ export function AcceptInviteScreen({ navigation, route }: any) {
         />
 
         <Text style={styles.label}>Confirm Password *</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={confirmPassword}
           onChangeText={setConfirmPassword}

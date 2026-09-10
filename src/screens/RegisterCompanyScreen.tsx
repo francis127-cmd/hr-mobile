@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { AppTextInput } from '../components/AppTextInput';
 import { api } from '../api/requests';
 
 export function RegisterCompanyScreen({ navigation }: any) {
@@ -98,31 +99,31 @@ export function RegisterCompanyScreen({ navigation }: any) {
         </View>
 
         <Text style={styles.label}>Company Name *</Text>
-        <TextInput style={styles.input} value={name} onChangeText={handleNameChange} placeholder="Acme Corp" autoCapitalize="words" />
+        <AppTextInput style={styles.input} value={name} onChangeText={handleNameChange} placeholder="Acme Corp" autoCapitalize="words" />
 
         <Text style={styles.label}>Company Slug *</Text>
-        <TextInput style={styles.input} value={slug} onChangeText={setSlug} placeholder="acme-corp" autoCapitalize="none" autoCorrect={false} />
+        <AppTextInput style={styles.input} value={slug} onChangeText={setSlug} placeholder="acme-corp" autoCapitalize="none" autoCorrect={false} />
 
         <Text style={styles.label}>Email Domain *</Text>
-        <TextInput style={styles.input} value={domain} onChangeText={setDomain} placeholder="acme.com" autoCapitalize="none" autoCorrect={false} />
+        <AppTextInput style={styles.input} value={domain} onChangeText={setDomain} placeholder="acme.com" autoCapitalize="none" autoCorrect={false} />
         <Text style={styles.hint}>Your employees' email domain (e.g. acme.com)</Text>
 
         <Text style={styles.label}>Admin Email *</Text>
-        <TextInput style={styles.input} value={adminEmail} onChangeText={setAdminEmail} placeholder="admin@acme.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+        <AppTextInput style={styles.input} value={adminEmail} onChangeText={setAdminEmail} placeholder="admin@acme.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
         <Text style={styles.hint}>Must match your company domain</Text>
 
         <Text style={styles.label}>Admin Display Name</Text>
-        <TextInput style={styles.input} value={adminName} onChangeText={setAdminName} placeholder="Your Name" autoCapitalize="words" />
+        <AppTextInput style={styles.input} value={adminName} onChangeText={setAdminName} placeholder="Your Name" autoCapitalize="words" />
 
         {authMode === 'PASSWORD' ? (
           <>
             <Text style={styles.label}>Admin Password *</Text>
-            <TextInput style={styles.input} value={adminPassword} onChangeText={setAdminPassword} placeholder="At least 8 characters" secureTextEntry />
+            <AppTextInput style={styles.input} value={adminPassword} onChangeText={setAdminPassword} placeholder="At least 8 characters" secureTextEntry />
           </>
         ) : (
           <>
             <Text style={styles.label}>Google OAuth Client ID</Text>
-            <TextInput style={styles.input} value={googleClientId} onChangeText={setGoogleClientId} placeholder="123456789-abcdef.apps.googleusercontent.com" autoCapitalize="none" autoCorrect={false} />
+            <AppTextInput style={styles.input} value={googleClientId} onChangeText={setGoogleClientId} placeholder="123456789-abcdef.apps.googleusercontent.com" autoCapitalize="none" autoCorrect={false} />
             <Text style={styles.hint}>Create OAuth 2.0 credentials in Google Cloud Console</Text>
           </>
         )}

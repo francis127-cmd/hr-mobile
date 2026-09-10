@@ -44,10 +44,10 @@ export const api = {
     return res;
   },
 
-  async acceptInvite(token: string, password: string): Promise<{ accessToken: string; refreshToken?: string }> {
+  async acceptInvite(token: string, password: string, displayName?: string): Promise<{ accessToken: string; refreshToken?: string }> {
     const res = await apiRequest<{ accessToken: string; refreshToken?: string }>('/auth/accept-invite', {
       method: 'POST',
-      body: JSON.stringify({ token, password }),
+      body: JSON.stringify({ token, password, displayName: displayName || undefined }),
     });
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
     authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false, res.refreshToken);

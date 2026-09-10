@@ -17,7 +17,7 @@ import { RootNavigation } from '../navigation/types';
 
 export function HomeScreen() {
   const navigation = useNavigation<RootNavigation>();
-  const { user, memberships } = useAuth();
+  const { user, memberships, refreshMemberships } = useAuth();
   const [requests, setRequests] = useState<HrRequest[]>([]);
   const [stats, setStats] = useState<RequestStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +71,7 @@ export function HomeScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => {
+    refreshMemberships();
     if (activeTab === 'dept' && firstDept) {
       loadDeptQueue(firstDept.department.code);
     } else if (activeTab === 'claimed') {
@@ -78,7 +79,7 @@ export function HomeScreen() {
     } else {
       load();
     }
-  }, [activeTab, load, loadDeptQueue, loadClaimed, firstDept]));
+  }, [activeTab, load, loadDeptQueue, loadClaimed, firstDept, refreshMemberships]));
 
   const switchTab = (tab: 'my' | 'dept' | 'claimed') => {
     setActiveTab(tab);

@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
-  const loginWithPassword = useCallback(() => {
+  const loginWithPassword = useCallback(async () => {
     const s = authStore.get();
     if (s.token && s.ssoSubject) {
       setUser({
@@ -126,6 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         companyId: s.companyId || '',
       });
       setNewCompany(s.newCompany);
+      try {
+        const m = await api.myMemberships();
+        setMemberships(m as any);
+      } catch {}
     }
   }, []);
 
