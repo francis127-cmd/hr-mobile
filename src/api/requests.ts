@@ -201,6 +201,10 @@ export const api = {
     return apiRequest<any>(`/admin/users/${userId}`, { method: 'DELETE' });
   },
 
+  adminReactivateUser(userId: string): Promise<any> {
+    return apiRequest<any>(`/admin/users/${userId}/reactivate`, { method: 'POST' });
+  },
+
   updateCompany(companyId: string, name: string): Promise<{ id: string; name: string; slug: string }> {
     return apiRequest<{ id: string; name: string; slug: string }>(`/companies/${companyId}`, {
       method: 'PATCH',

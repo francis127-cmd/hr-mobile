@@ -71,6 +71,23 @@ export function ManageUsersScreen() {
     ]);
   };
 
+  const reactivate = async (user: UserRecord) => {
+    Alert.alert('Reactivate User', `Reactivate ${user.displayName}? They will be able to sign in again.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reactivate',
+        onPress: async () => {
+          try {
+            await api.adminReactivateUser(user.id);
+            loadUsers();
+          } catch (e: any) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
+  };
+
   const renderItem = ({ item }: { item: UserRecord }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -96,14 +113,21 @@ export function ManageUsersScreen() {
       )}
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => toggleRole(item)}>
-          <Ionicons name="shield-outline" size={16} color="#2563eb" />
-          <Text style={styles.actionText}>Role</Text>
-        </TouchableOpacity>
-        {item.active && (
-          <TouchableOpacity style={styles.actionBtn} onPress={() => deactivate(item)}>
-            <Ionicons name="ban-outline" size={16} color="#dc2626" />
-            <Text style={[styles.actionText, { color: '#dc2626' }]}>Deactivate</Text>
+        {item.active ? (
+          <>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => toggleRole(item)}>
+              <Ionicons name="shield-outline" size={16} color="#2563eb" />
+              <Text style={styles.actionText}>Role</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => deactivate(item)}>
+              <Ionicons name="ban-outline" size={16} color="#dc2626" />
+              <Text style={[styles.actionText, { color: '#dc2626' }]}>Deactivate</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity style={styles.actionBtn} onPress={() => reactivate(item)}>
+            <Ionicons name="checkmark-circle-outline" size={16} color="#16a34a" />
+            <Text style={[styles.actionText, { color: '#16a34a' }]}>Reactivate</Text>
           </TouchableOpacity>
         )}
       </View>
