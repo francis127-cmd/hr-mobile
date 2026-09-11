@@ -157,3 +157,25 @@ export interface UpdateRequestStatusDto {
   resolutionNote?: string;
   rejectionReason?: string;
 }
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  requestId: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface LegalSection {
+  heading: string;
+  body: string;
+}
+
+export interface LegalDocument {
+  title: string;
+  updatedAt: string;
+  intro: string;
+  sections: LegalSection[];
+}

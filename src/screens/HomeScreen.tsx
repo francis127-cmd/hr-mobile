@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '../api/requests';
 import { HrRequest, RequestStats, STATUS_COLORS, STATUS_LABELS } from '../types';
 import { RequestCard } from '../components/RequestCard';
@@ -24,6 +25,7 @@ export function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'my' | 'dept' | 'claimed'>('my');
+  const [unread, setUnread] = useState(0);
 
   const isStaff = memberships.length > 0 || user?.role === 'SYSTEM_ADMIN';
   const firstDept = memberships[0];
@@ -72,6 +74,7 @@ export function HomeScreen() {
 
   useFocusEffect(useCallback(() => {
     refreshMemberships();
+    api.unreadNotificationCount().then(setUnread).catch(() => {});
     if (activeTab === 'dept' && firstDept) {
       loadDeptQueue(firstDept.department.code);
     } else if (activeTab === 'claimed') {
@@ -93,6 +96,18 @@ export function HomeScreen() {
     <View style={styles.flex}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Hi, {user?.displayName || user?.ssoSubject}</Text>
+        <TouchableOpacity
+          style={styles.bell}
+          onPress={() => navigation.navigate('Notifications')}
+          accessibilityLabel="Notifications"
+        >
+          <Ionicons name="notifications-outline" size={24} color="#0f172a" />
+          {unread > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unread > 99 ? '99+' : String(unread)}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {stats && (
@@ -189,8 +204,11 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { padding: 20, paddingBottom: 8 },
-  greeting: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
+  header: { padding: 20, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  greeting: { fontSize: 22, fontWeight: '800', color: '#0f172a', flex: 1 },
+  bell: { padding: 6 },
+  badge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#dc2626', borderRadius: 9, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   statsRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 12 },
   stat: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 14, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   statNum: { fontSize: 24, fontWeight: '800' },

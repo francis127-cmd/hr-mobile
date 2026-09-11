@@ -20,6 +20,8 @@ import { MfaSetupScreen } from '../screens/MfaSetupScreen';
 import { MfaChallengeScreen } from '../screens/MfaChallengeScreen';
 import { MfaSettingsScreen } from '../screens/MfaSettingsScreen';
 import { OidcProvidersScreen } from '../screens/OidcProvidersScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { LegalScreen } from '../screens/LegalScreen';
 import { useAuth, canManageAll } from '../auth/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
@@ -132,6 +134,8 @@ export function AppNavigator() {
           <RootStack.Screen name="MfaSetup" component={MfaSetupScreen} options={{ title: 'MFA Setup' }} />
           <RootStack.Screen name="MfaSettings" component={MfaSettingsScreen} options={{ title: 'MFA Settings' }} />
           <RootStack.Screen name="OidcProviders" component={OidcProvidersScreen} options={{ title: 'OIDC Providers' }} />
+          <RootStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+          <RootStack.Screen name="Legal" component={LegalScreen} options={{ title: 'Legal' }} />
         </>
       )}
     </RootStack.Navigator>

@@ -1,9 +1,11 @@
 import { apiRequest, apiUpload, apiDownload } from './client';
 import {
+  AppNotification,
   CreateRequestDto,
   Department,
   DocumentRef,
   HrRequest,
+  LegalDocument,
   RequestStats,
   UpdateRequestStatusDto,
 } from '../types';
@@ -265,5 +267,26 @@ export const api = {
     const payload = JSON.parse(atob(res.accessToken.split('.')[1]));
     authStore.setToken(res.accessToken, payload.email, payload.role, authStore.get().apiBase, payload.name, payload.email, payload.sub, payload.companyId, false, res.refreshToken);
     return { isNewUser: res.isNewUser || false };
+  },
+
+  async listNotifications(): Promise<AppNotification[]> {
+    return apiRequest<AppNotification[]>('/notifications');
+  },
+
+  async unreadNotificationCount(): Promise<number> {
+    const res = await apiRequest<{ count: number }>('/notifications/unread-count');
+    return res.count;
+  },
+
+  async markNotificationRead(id: string): Promise<void> {
+    await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+  },
+
+  async markAllNotificationsRead(): Promise<void> {
+    await apiRequest('/notifications/read-all', { method: 'PATCH' });
+  },
+
+  async legal(kind: 'privacy' | 'terms'): Promise<LegalDocument> {
+    return apiRequest<LegalDocument>(`/legal/${kind}`);
   },
 };

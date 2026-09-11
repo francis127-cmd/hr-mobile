@@ -38,6 +38,22 @@ export function ProfileScreen() {
         <Text style={styles.securityBtnText}>Two-Factor Authentication (MFA)</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.legalBtn}
+        onPress={() => navigation.navigate('Legal', { kind: 'privacy' })}
+      >
+        <Ionicons name="document-text-outline" size={20} color="#475569" style={{ marginRight: 10 }} />
+        <Text style={styles.legalBtnText}>Privacy Policy</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.legalBtn}
+        onPress={() => navigation.navigate('Legal', { kind: 'terms' })}
+      >
+        <Ionicons name="document-text-outline" size={20} color="#475569" style={{ marginRight: 10 }} />
+        <Text style={styles.legalBtnText}>Terms of Service</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
@@ -61,4 +77,6 @@ const styles = StyleSheet.create({
   logoutText: { color: '#dc2626', fontWeight: '700', fontSize: 16 },
   securityBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', borderRadius: 10, padding: 16, marginTop: 4, borderWidth: 1, borderColor: '#bfdbfe' },
   securityBtnText: { color: '#1d4ed8', fontWeight: '700', fontSize: 15 },
+  legalBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 16, marginTop: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  legalBtnText: { color: '#334155', fontWeight: '600', fontSize: 15 },
 });
