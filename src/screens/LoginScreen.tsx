@@ -5,6 +5,12 @@ import { useAuth } from '../auth/AuthContext';
 import { AppTextInput } from '../components/AppTextInput';
 import * as WebBrowser from 'expo-web-browser';
 
+// Single global Google web client ID for the entire app. The backend verifies
+// token audience against this same value, so per-company reconfiguration is
+// intentionally NOT done — it would cause "Invalid Google token" mismatches.
+const GLOBAL_GOOGLE_WEB_CLIENT_ID =
+  '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com';
+
 let GoogleSignin: any = null;
 let nativeGoogleAvailable = false;
 
@@ -13,7 +19,7 @@ try {
   GoogleSignin = mod.GoogleSignin;
   if (GoogleSignin && typeof GoogleSignin.configure === 'function') {
     GoogleSignin.configure({
-      webClientId: '804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn.apps.googleusercontent.com',
+      webClientId: GLOBAL_GOOGLE_WEB_CLIENT_ID,
       scopes: ['profile', 'email'],
     });
     nativeGoogleAvailable = true;
@@ -51,12 +57,9 @@ export function LoginScreen({ navigation }: any) {
       setDiscoverResult(result);
 
       if (result.authMode === 'SSO') {
-        if (result.googleClientId && nativeGoogleAvailable && GoogleSignin) {
-          GoogleSignin.configure({
-            webClientId: result.googleClientId,
-            scopes: ['profile', 'email'],
-          });
-        }
+        // Keep the global webClientId configured above. Reconfiguring with a
+        // per-company value would change the token audience and the backend
+        // would reject it as an invalid Google token.
         setStep('sso');
         setStatus(`Signing in to ${result.companyName} via Google...`);
         if (result.companySlug) void loadOidcProviders(result.companySlug);
@@ -138,9 +141,6 @@ export function LoginScreen({ navigation }: any) {
       const result = await api.discover(googleEmail);
       setDiscoverResult(result);
       if (result.authMode === 'SSO') {
-        if (result.googleClientId) {
-          GoogleSignin.configure({ webClientId: result.googleClientId, scopes: ['profile', 'email'] });
-        }
         await loginWithGoogle(tokens.idToken);
       } else if (result.authMode === 'PASSWORD' || result.authMode === 'OIDC') {
         setStep(result.authMode === 'OIDC' ? 'sso' : 'password');
@@ -284,7 +284,7 @@ export function LoginScreen({ navigation }: any) {
         onLogin={handlePasswordLogin}
         onBack={handleBack}
         onSso={handleGoogleSignIn}
-        hasSso={!!discoverResult?.googleClientId}
+        hasSso={discoverResult?.authMode === 'SSO'}
         loading={loading}
         status={status}
       />
