@@ -106,6 +106,9 @@ export interface RequestStats {
   completed: number;
   rejected: number;
   cancelled: number;
+  // Agent-side: requests I claimed still in progress. Optional so older
+  // backends (which omit it) don't break the UI — treated as 0.
+  claimedActive?: number;
 }
 
 export const PRIORITY_OPTIONS: Priority[] = [Priority.LOW, Priority.STANDARD, Priority.URGENT];

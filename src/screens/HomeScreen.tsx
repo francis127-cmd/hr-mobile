@@ -124,6 +124,16 @@ export function HomeScreen() {
             <Text style={[styles.statNum, { color: STATUS_COLORS.COMPLETED }]}>{stats.completed}</Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
+          {isStaff && (
+            <TouchableOpacity
+              style={styles.stat}
+              onPress={() => switchTab('claimed')}
+              accessibilityLabel="View claimed requests"
+            >
+              <Text style={[styles.statNum, { color: STATUS_COLORS.IN_PROGRESS }]}>{stats.claimedActive ?? 0}</Text>
+              <Text style={styles.statLabel}>Claimed</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
