@@ -5,7 +5,6 @@ import { api } from '../api/requests';
 
 export function SSOSettingsScreen({ navigation }: any) {
   const [domain, setDomain] = useState('');
-  const [googleClientId, setGoogleClientId] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companySlug, setCompanySlug] = useState('');
   const [authMode, setAuthMode] = useState('PASSWORD');
@@ -24,7 +23,6 @@ export function SSOSettingsScreen({ navigation }: any) {
       setCompanyName(data.name || '');
       setCompanySlug(data.slug || '');
       setDomain(data.domain || '');
-      setGoogleClientId(data.googleClientId || '');
       setAuthMode(data.authMode || 'PASSWORD');
       setMfaRequired(data.mfaRequired || false);
       setRefreshTokenExpiryDays(String(data.refreshTokenExpiryDays || 7));
@@ -46,7 +44,6 @@ export function SSOSettingsScreen({ navigation }: any) {
       }
       await api.updateCompanySso({
         domain: domain.trim().toLowerCase() || undefined,
-        googleClientId: googleClientId.trim() || undefined,
         authMode,
         mfaRequired,
         refreshTokenExpiryDays: days,
@@ -109,17 +106,7 @@ export function SSOSettingsScreen({ navigation }: any) {
             autoCorrect={false}
           />
           <Text style={styles.hint}>Users with emails @company.com will be routed to Google SSO</Text>
-
-          <Text style={styles.label}>Google OAuth Client ID</Text>
-          <AppTextInput
-            style={styles.input}
-            value={googleClientId}
-            onChangeText={setGoogleClientId}
-            placeholder="123456789-abcdef.apps.googleusercontent.com"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hint}>Create OAuth 2.0 credentials in Google Cloud Console</Text>
+          <Text style={styles.hint}>No per-company Google setup needed — the app signs everyone in with its shared Google client.</Text>
         </>
       )}
 

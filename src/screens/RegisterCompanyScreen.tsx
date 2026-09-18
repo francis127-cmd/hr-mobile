@@ -11,7 +11,6 @@ export function RegisterCompanyScreen({ navigation }: any) {
   const [adminName, setAdminName] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [authMode, setAuthMode] = useState<'PASSWORD' | 'SSO'>('PASSWORD');
-  const [googleClientId, setGoogleClientId] = useState('');
   const [loading, setLoading] = useState(false);
 
   const generateSlug = (companyName: string) => {
@@ -61,7 +60,6 @@ export function RegisterCompanyScreen({ navigation }: any) {
           adminEmail: adminEmail.trim().toLowerCase(),
           adminName: adminName.trim() || adminEmail.split('@')[0],
           adminPassword: authMode === 'PASSWORD' ? adminPassword : undefined,
-          googleClientId: authMode === 'SSO' ? googleClientId.trim() || undefined : undefined,
       });
 
       Alert.alert(
@@ -122,9 +120,7 @@ export function RegisterCompanyScreen({ navigation }: any) {
           </>
         ) : (
           <>
-            <Text style={styles.label}>Google OAuth Client ID</Text>
-            <AppTextInput style={styles.input} value={googleClientId} onChangeText={setGoogleClientId} placeholder="123456789-abcdef.apps.googleusercontent.com" autoCapitalize="none" autoCorrect={false} />
-            <Text style={styles.hint}>Create OAuth 2.0 credentials in Google Cloud Console</Text>
+            <Text style={styles.hint}>Google SSO needs no extra setup — employees with your company domain sign straight in with their Google accounts.</Text>
           </>
         )}
 
