@@ -9,7 +9,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eurisko.hub"
+      "bundleIdentifier": "com.eurisko.hub",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Hold the magic button to describe your request by voice and turn it into a ticket."
+      }
     },
     "android": {
       "package": "com.eurisko.hub",

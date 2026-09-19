@@ -1,6 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -9,12 +12,50 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import Animated, {
+  FadeInDown,
+  FadeOutDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { api } from '../api/requests';
+import { ApiError } from '../api/client';
 import { HrRequest, RequestStats, STATUS_COLORS, STATUS_LABELS } from '../types';
 import { RequestCard } from '../components/RequestCard';
 import { Loading, EmptyState } from '../components/Feedback';
 import { useAuth } from '../auth/AuthContext';
 import { RootNavigation } from '../navigation/types';
+
+// expo-av has no strict .m4a preset, so recording options are pinned
+// explicitly: AAC in MP4 container on both platforms. Backend accepts .m4a.
+const VOICE_RECORDING_OPTIONS: Audio.RecordingOptions = {
+  android: {
+    extension: '.m4a',
+    outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+    audioEncoder: Audio.AndroidAudioEncoder.AAC,
+    sampleRate: 44100,
+    numberOfChannels: 2,
+    bitRate: 128000,
+  },
+  ios: {
+    extension: '.m4a',
+    audioQuality: Audio.IOSAudioQuality.HIGH,
+    sampleRate: 44100,
+    numberOfChannels: 2,
+    bitRate: 128000,
+    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: 'audio/webm',
+    bitsPerSecond: 128000,
+  },
+};
 
 export function HomeScreen() {
   const navigation = useNavigation<RootNavigation>();
@@ -26,6 +67,45 @@ export function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'my' | 'dept' | 'claimed'>('my');
   const [unread, setUnread] = useState(0);
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceUploading, setVoiceUploading] = useState(false);
+  const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulse = useSharedValue(1);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+    shadowOpacity: 0.25 + (pulse.value - 1) * 2,
+  }));
+
+  const showVoiceToast = useCallback((msg: string) => {
+    setVoiceToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setVoiceToast(null), 3200);
+  }, []);
+
+  const startVoiceRecording = useCallback(async () => {
+    if (recordingRef.current || voiceUploading) return;
+    try {
+      const perm = await Audio.requestPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Microphone needed', 'Allow microphone access to create tickets by voice.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(VOICE_RECORDING_OPTIONS);
+      recordingRef.current = recording;
+      setVoiceRecording(true);
+      pulse.value = withRepeat(withTiming(1.18, { duration: 650 }), -1, true);
+    } catch (e: any) {
+      Alert.alert('Recording failed', e?.message || 'Could not start recording.');
+    }
+  }, [voiceUploading, pulse]);
+
+  // finishVoiceRecording lives below loadClaimed: it calls load(), which is
+  // declared further down, and referencing it in a deps array up here would
+  // crash on render (temporal dead zone).
 
   const isStaff = memberships.length > 0 || user?.role === 'SYSTEM_ADMIN';
   const firstDept = memberships[0];
@@ -70,6 +150,44 @@ export function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
+  }, []);
+
+  const finishVoiceRecording = useCallback(async () => {
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    pulse.value = withTiming(1, { duration: 200 });
+    if (!rec) return;
+    setVoiceRecording(false);
+    try {
+      const status = await rec.getStatusAsync();
+      await rec.stopAndUnloadAsync();
+      try {
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      } catch {}
+      const uri = rec.getURI();
+      if (!uri || (status.durationMillis ?? 0) < 800) {
+        showVoiceToast('Hold the button and speak your request');
+        return;
+      }
+      setVoiceUploading(true);
+      const res = await api.generateTicketFromVoice(uri);
+      showVoiceToast(`Ticket created: ${res.ticket.title}`);
+      setActiveTab('my');
+      await load();
+    } catch (e: any) {
+      Alert.alert('Voice ticket failed', e instanceof ApiError ? e.message : e?.message || 'Could not create ticket.');
+    } finally {
+      setVoiceUploading(false);
+    }
+  }, [pulse, showVoiceToast, load]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      const rec = recordingRef.current;
+      recordingRef.current = null;
+      if (rec) rec.stopAndUnloadAsync().catch(() => {});
+    };
   }, []);
 
   useFocusEffect(useCallback(() => {
@@ -208,6 +326,39 @@ export function HomeScreen() {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
+
+      {(user?.role === 'EMPLOYEE' || user?.role === 'SYSTEM_ADMIN') && (
+        <Animated.View style={[styles.voiceFabWrap, glowStyle]}>
+          <Pressable
+            style={styles.voiceFab}
+            onPressIn={startVoiceRecording}
+            onPressOut={finishVoiceRecording}
+            accessibilityLabel="Hold to create a ticket by voice"
+          >
+            {voiceUploading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="sparkles" size={28} color="#fff" />
+            )}
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {voiceToast && (
+        <Animated.View
+          style={styles.voiceToast}
+          entering={FadeInDown.duration(220)}
+          exiting={FadeOutDown.duration(220)}
+        >
+          <Text style={styles.voiceToastText}>{voiceToast}</Text>
+        </Animated.View>
+      )}
+
+      {voiceRecording && (
+        <View style={styles.voiceHint}>
+          <Text style={styles.voiceHintText}>Listening… release to create your ticket</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -237,4 +388,22 @@ const styles = StyleSheet.create({
     elevation: 6, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6,
   },
   fabText: { color: '#fff', fontSize: 28, lineHeight: 32, fontWeight: '700' },
+  voiceFabWrap: {
+    position: 'absolute', right: 20, bottom: 92, width: 64, height: 64, borderRadius: 32,
+    backgroundColor: '#7c3aed',
+    shadowColor: '#7c3aed', shadowOpacity: 0.25, shadowRadius: 12,
+    elevation: 6,
+  },
+  voiceFab: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 32 },
+  voiceToast: {
+    position: 'absolute', left: 20, right: 20, bottom: 170,
+    backgroundColor: '#0f172a', borderRadius: 12, padding: 14, alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+  },
+  voiceToastText: { color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  voiceHint: {
+    position: 'absolute', left: 20, right: 20, bottom: 170,
+    backgroundColor: '#7c3aed', borderRadius: 12, padding: 14, alignItems: 'center',
+  },
+  voiceHintText: { color: '#fff', fontSize: 14, fontWeight: '700', textAlign: 'center' },
 });

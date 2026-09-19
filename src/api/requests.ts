@@ -135,6 +135,16 @@ export const api = {
     });
   },
 
+  async generateTicketFromVoice(uri: string): Promise<{ ticket: HrRequest; transcript: string }> {
+    const form = new FormData();
+    form.append('file', {
+      uri,
+      name: 'voice.m4a',
+      type: 'audio/m4a',
+    } as any);
+    return apiUpload<{ ticket: HrRequest; transcript: string }>('/requests/ai-generate', form);
+  },
+
   claimRequest(id: string): Promise<HrRequest> {
     return apiRequest<HrRequest>(`/requests/${id}/claim`, { method: 'POST' });
   },
