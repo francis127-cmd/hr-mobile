@@ -145,6 +145,16 @@ export const api = {
     return apiUpload<{ ticket: HrRequest; transcript: string }>('/requests/ai-generate', form);
   },
 
+  async draftTicketFromText(text: string): Promise<{
+    draft: { departmentCode: string; requestTypeCode: string; title: string; description: string; priority: string };
+    transcript: string;
+  }> {
+    return apiRequest('/requests/ai-generate-text', {
+      method: 'POST',
+      body: JSON.stringify({ text, preview: true }),
+    });
+  },
+
   claimRequest(id: string): Promise<HrRequest> {
     return apiRequest<HrRequest>(`/requests/${id}/claim`, { method: 'POST' });
   },

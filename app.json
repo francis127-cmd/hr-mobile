@@ -43,7 +43,9 @@
           "iosUrlScheme": "com.googleusercontent.apps.804630899699-d6eceuaat3io3p1f65ihvsejfgpnatcn",
           "profileImageSize": 120
         }
-      ]
+      ],
+      "expo-font",
+      "expo-sharing"
     ],
     "runtimeVersion": {
       "policy": "appVersion"

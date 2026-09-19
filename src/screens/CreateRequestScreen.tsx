@@ -29,6 +29,7 @@ export function CreateRequestScreen({ route, navigation }: Props) {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('STANDARD');
   const [submitting, setSubmitting] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
 
   useEffect(() => {
     api.catalog().then((depts) => {
@@ -47,6 +48,35 @@ export function CreateRequestScreen({ route, navigation }: Props) {
 
   const dept = departments.find((d) => d.code === selectedDept);
   const reqTypes = dept?.requestTypes || [];
+
+  const enhanceWithAI = async () => {
+    const raw = `${title.trim()}. ${description.trim()}`.trim();
+    if (raw.replace(/[. ]/g, '').length < 4) {
+      Alert.alert('Write first', 'Type a few rough words about the issue, then let AI structure it.');
+      return;
+    }
+    setAiDrafting(true);
+    try {
+      const res = await api.draftTicketFromText(raw);
+      const deptOk = departments.some((d) => d.code === res.draft.departmentCode);
+      if (!deptOk) {
+        Alert.alert('AI unclear', 'The AI could not match a department. Pick one manually.');
+        return;
+      }
+      setSelectedDept(res.draft.departmentCode);
+      setSelectedType(res.draft.requestTypeCode);
+      setTitle(res.draft.title);
+      setDescription(res.draft.description);
+      if (['LOW', 'STANDARD', 'URGENT'].includes(res.draft.priority)) {
+        setPriority(res.draft.priority);
+      }
+      Alert.alert('Draft ready', 'AI structured your request — review and hit Submit.');
+    } catch (e: any) {
+      Alert.alert('AI draft failed', e instanceof ApiError ? e.message : e?.message || 'Could not draft.');
+    } finally {
+      setAiDrafting(false);
+    }
+  };
 
   const submit = async () => {
     if (!selectedDept) return Alert.alert('Required', 'Choose a department.');
@@ -134,6 +164,14 @@ export function CreateRequestScreen({ route, navigation }: Props) {
         </View>
 
         <TouchableOpacity
+          style={[styles.aiButton, aiDrafting && styles.buttonDisabled]}
+          onPress={enhanceWithAI}
+          disabled={aiDrafting || submitting}
+        >
+          <Text style={styles.aiButtonText}>{aiDrafting ? '✨ Drafting...' : '✨ Draft with AI'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.button, submitting && styles.buttonDisabled]}
           onPress={submit}
           disabled={submitting}
@@ -168,5 +206,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: 24,
   },
   buttonDisabled: { opacity: 0.6 },
+  aiButton: {
+    borderRadius: 10, padding: 14, marginTop: 20,
+    alignItems: 'center', backgroundColor: '#ede9fe',
+    borderWidth: 1, borderColor: '#c4b5fd',
+  },
+  aiButtonText: { color: '#6d28d9', fontWeight: '700', fontSize: 15 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });
